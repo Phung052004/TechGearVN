@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="CPU">
+    <rect width="600" height="600" fill="#f8fafc" />
+    <rect x="120" y="120" width="360" height="360" rx="28" fill="#ffffff" stroke="#cbd5e1" stroke-width="10" />
+    <rect x="200" y="200" width="200" height="200" rx="20" fill="#e2e8f0" stroke="#94a3b8" stroke-width="10" />
+    <g stroke="#94a3b8" stroke-width="10" stroke-linecap="round">
+        <path d="M170 120v-40" />
+        <path d="M230 120v-40" />
+        <path d="M290 120v-40" />
+        <path d="M350 120v-40" />
+        <path d="M410 120v-40" />
+        <path d="M170 520v-40" />
+        <path d="M230 520v-40" />
+        <path d="M290 520v-40" />
+        <path d="M350 520v-40" />
+        <path d="M410 520v-40" />
+        <path d="M120 170h-40" />
+        <path d="M120 230h-40" />
+        <path d="M120 290h-40" />
+        <path d="M120 350h-40" />
+        <path d="M120 410h-40" />
+        <path d="M520 170h-40" />
+        <path d="M520 230h-40" />
+        <path d="M520 290h-40" />
+        <path d="M520 350h-40" />
+        <path d="M520 410h-40" />
+    </g>
+    <text x="300" y="545" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+        font-size="36" fill="#0f172a" font-weight="700">CPU</text>
+</svg>

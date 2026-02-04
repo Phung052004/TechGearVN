@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img"
+    aria-label="TechGear placeholder">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#f3f4f6" />
+            <stop offset="1" stop-color="#e5e7eb" />
+        </linearGradient>
+    </defs>
+    <rect width="600" height="600" fill="url(#bg)" />
+    <rect x="40" y="40" width="520" height="520" rx="28" fill="#ffffff" opacity="0.65" />
+
+    <g fill="none" stroke="#9ca3af" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+        <path d="M190 390h220" />
+        <path d="M220 310l80-80 80 80" />
+        <rect x="210" y="210" width="180" height="160" rx="20" />
+        <circle cx="260" cy="260" r="16" fill="#9ca3af" stroke="none" />
+    </g>
+
+    <text x="300" y="460" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+        font-size="40" fill="#374151" font-weight="700">TechGear</text>
+    <text x="300" y="505" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+        font-size="22" fill="#6b7280">Image unavailable</text>
+</svg>

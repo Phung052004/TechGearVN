@@ -1,0 +1,94 @@
+/* src/components/home/swiper-custom.css */
+
+/* Scoped styles for the home banner Swiper */
+.banner-swiper {
+  --swiper-theme-color: #e02424;
+}
+
+/* NAVIGATION: pro look + show on hover */
+.banner-swiper .swiper-button-next,
+.banner-swiper .swiper-button-prev {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  color: rgba(17, 24, 39, 0.9) !important;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease,
+    background-color 200ms ease,
+    color 200ms ease;
+
+  /* Center vertically */
+  top: 50% !important;
+  margin-top: 0 !important;
+
+  /* Hidden by default; reveal on hover/focus */
+  opacity: 0;
+}
+
+.banner-swiper .swiper-button-prev {
+  left: 12px;
+  transform: translate(-6px, -50%);
+}
+
+.banner-swiper .swiper-button-next {
+  right: 12px;
+  transform: translate(6px, -50%);
+}
+
+.banner-swiper:hover .swiper-button-next,
+.banner-swiper:hover .swiper-button-prev,
+.banner-swiper:focus-within .swiper-button-next,
+.banner-swiper:focus-within .swiper-button-prev {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.banner-swiper .swiper-button-next:hover,
+.banner-swiper .swiper-button-prev:hover {
+  background: #e02424;
+  color: #ffffff !important;
+}
+
+.banner-swiper .swiper-button-next:after,
+.banner-swiper .swiper-button-prev:after {
+  font-size: 16px !important;
+  font-weight: 700;
+}
+
+/* On touch devices there is no hover: keep controls visible */
+@media (hover: none) {
+  .banner-swiper .swiper-button-next,
+  .banner-swiper .swiper-button-prev {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+/* PAGINATION: line/pill bullets like many pro e-commerce banners */
+.banner-swiper .swiper-pagination {
+  bottom: 10px !important;
+  left: 50% !important;
+  top: auto !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+}
+
+.banner-swiper .swiper-pagination-bullet {
+  width: 22px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.75);
+  opacity: 1;
+  transition:
+    background-color 200ms ease,
+    width 200ms ease;
+}
+
+.banner-swiper .swiper-pagination-bullet-active {
+  background: #e02424;
+  width: 30px;
+}

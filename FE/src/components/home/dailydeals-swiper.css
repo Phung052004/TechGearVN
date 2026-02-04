@@ -1,0 +1,59 @@
+/* Scoped styles for DailyDeals Swiper navigation */
+
+.dailydeals-swiper {
+  --swiper-theme-color: #111827;
+  overflow: visible;
+}
+
+.dailydeals-swiper .swiper-wrapper,
+.dailydeals-swiper .swiper-slide {
+  overflow: visible;
+}
+
+.dailydeals-swiper .swiper-button-next,
+.dailydeals-swiper .swiper-button-prev {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+  color: rgba(17, 24, 39, 0.95) !important;
+
+  top: 50% !important;
+  margin-top: 0 !important;
+  transform: translateY(-50%);
+}
+
+.dailydeals-swiper .swiper-button-prev {
+  left: 6px;
+}
+
+.dailydeals-swiper .swiper-button-next {
+  right: 6px;
+}
+
+.dailydeals-swiper .swiper-button-next:after,
+.dailydeals-swiper .swiper-button-prev:after {
+  font-size: 18px !important;
+  font-weight: 800;
+}
+
+.dailydeals-swiper .swiper-button-next:hover,
+.dailydeals-swiper .swiper-button-prev:hover {
+  background: #ffffff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+@media (max-width: 640px) {
+  .dailydeals-swiper .swiper-button-next,
+  .dailydeals-swiper .swiper-button-prev {
+    width: 34px;
+    height: 34px;
+  }
+
+  .dailydeals-swiper .swiper-button-next:after,
+  .dailydeals-swiper .swiper-button-prev:after {
+    font-size: 16px !important;
+  }
+}

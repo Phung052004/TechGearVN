@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Thêm font chữ hoặc custom scrollbar tại đây nếu muốn web xịn hơn */
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f9fafb; /* Màu nền xám nhẹ hiện đại */
+}
+
+/* UI quick-fix: many screens use font-extrabold/font-black heavily.
+   Clamp them down so typography looks less "đậm nhất" overall. */
+.font-extrabold {
+  font-weight: 700;
+}
+.font-black {
+  font-weight: 800;
+}
+
+@layer utilities {
+  /* Hiệu ứng chuyển màu (2s, infinity) cho các nút pill */
+  .animate-color-shift-2s {
+    background-image: linear-gradient(
+      90deg,
+      #0891b2,
+      #0f52ba,
+      #22c55e,
+      #0891b2
+    );
+    background-size: 300% 300%;
+    animation: color-shift 2s linear infinite;
+  }
+
+  @keyframes color-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 100% 50%;
+    }
+  }
+}
