@@ -10,6 +10,7 @@ export * as warrantyService from "./warrantyService";
 export * as reviewService from "./reviewService";
 export * as chatService from "./chatService";
 export * as voucherService from "./voucherService";
+export * as savedBuildService from "./savedBuildService";
 export * from "./bannerService";
 export * from "./settingsService";
 export * from "./adminService";

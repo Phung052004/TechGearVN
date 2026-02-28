@@ -14,31 +14,42 @@ const app = express();
 app.use(cors()); // Cho phép Frontend gọi API
 app.use(express.json()); // Đọc được JSON từ body request
 
+const API_PREFIX = "/api/v1";
+
 // Routes
-app.use("/api/auth", require("./server/routes/authRoutes"));
-app.use("/api/users", require("./server/routes/userRoutes"));
-app.use("/api/products", require("./server/routes/productRoutes"));
-app.use("/api/categories", require("./server/routes/categoryRoutes"));
-app.use("/api/brands", require("./server/routes/brandRoutes"));
+app.use(`${API_PREFIX}/auth`, require("./server/routes/authRoutes"));
+app.use(`${API_PREFIX}/users`, require("./server/routes/userRoutes"));
+app.use(`${API_PREFIX}/products`, require("./server/routes/productRoutes"));
+app.use(`${API_PREFIX}/categories`, require("./server/routes/categoryRoutes"));
+app.use(`${API_PREFIX}/brands`, require("./server/routes/brandRoutes"));
 
-app.use("/api/carts", require("./server/routes/cartRoutes"));
-app.use("/api/orders", require("./server/routes/orderRoutes"));
-app.use("/api/saved-builds", require("./server/routes/savedBuildRoutes"));
+app.use(`${API_PREFIX}/carts`, require("./server/routes/cartRoutes"));
+app.use(`${API_PREFIX}/orders`, require("./server/routes/orderRoutes"));
+app.use(
+  `${API_PREFIX}/saved-builds`,
+  require("./server/routes/savedBuildRoutes"),
+);
 
-app.use("/api/vouchers", require("./server/routes/voucherRoutes"));
-app.use("/api/banners", require("./server/routes/bannerRoutes"));
-app.use("/api/settings", require("./server/routes/settingRoutes"));
-app.use("/api/admin", require("./server/routes/adminRoutes"));
-app.use("/api/articles", require("./server/routes/articleRoutes"));
-app.use("/api/reviews", require("./server/routes/reviewRoutes"));
-app.use("/api/warranty-claims", require("./server/routes/warrantyRoutes"));
+app.use(`${API_PREFIX}/vouchers`, require("./server/routes/voucherRoutes"));
+app.use(`${API_PREFIX}/banners`, require("./server/routes/bannerRoutes"));
+app.use(`${API_PREFIX}/settings`, require("./server/routes/settingRoutes"));
+app.use(`${API_PREFIX}/admin`, require("./server/routes/adminRoutes"));
+app.use(`${API_PREFIX}/articles`, require("./server/routes/articleRoutes"));
+app.use(`${API_PREFIX}/reviews`, require("./server/routes/reviewRoutes"));
+app.use(
+  `${API_PREFIX}/warranty-claims`,
+  require("./server/routes/warrantyRoutes"),
+);
 
-app.use("/api/payments", require("./server/routes/paymentRoutes"));
+app.use(`${API_PREFIX}/payments`, require("./server/routes/paymentRoutes"));
 
-app.use("/api/suppliers", require("./server/routes/supplierRoutes"));
-app.use("/api/import-receipts", require("./server/routes/importReceiptRoutes"));
+app.use(`${API_PREFIX}/suppliers`, require("./server/routes/supplierRoutes"));
+app.use(
+  `${API_PREFIX}/import-receipts`,
+  require("./server/routes/importReceiptRoutes"),
+);
 
-app.use("/api/chat", require("./server/routes/chatRoutes"));
+app.use(`${API_PREFIX}/chat`, require("./server/routes/chatRoutes"));
 
 // Default Route
 app.get("/", (req, res) => {

@@ -14,6 +14,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import VerifyRegister from "./pages/auth/VerifyRegister";
+import BuildPcPage from "./pages/user/BuildPcPage";
 import Dashboard from "./pages/admin/Dashboard";
 import Analytics from "./pages/admin/Analytics";
 import UsersManage from "./pages/admin/UsersManage";
@@ -52,7 +53,7 @@ function App() {
         <Route path="reset-password" element={<ResetPassword />} />
         <Route path="verify-email" element={<VerifyEmail />} />
         <Route path="verify-register" element={<VerifyRegister />} />
-        {/* Sau này thêm: Cart, Checkout, BuildPC */}
+        <Route path="build-pc" element={<BuildPcPage />} />
       </Route>
 
       {/* --- KHU VỰC ADMIN (Cần quyền Admin) --- */}

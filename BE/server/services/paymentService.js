@@ -294,7 +294,7 @@ async function createMomoPayment({ user, orderId } = {}) {
 
   if (shouldFake) {
     const returnUrl = new URL(
-      `${getBackendBaseUrl()}/api/payments/momo/return`,
+      `${getBackendBaseUrl()}/api/v1/payments/momo/return`,
     );
     returnUrl.searchParams.set("orderId", String(order._id));
     returnUrl.searchParams.set("resultCode", "0");
@@ -410,8 +410,8 @@ async function createPayosPayment({ user, orderId } = {}) {
   }
 
   const amount = Math.round(Number(order.finalAmount || 0));
-  const returnUrl = `${getBackendBaseUrl()}/api/payments/payos/return`;
-  const cancelUrl = `${getBackendBaseUrl()}/api/payments/payos/cancel`;
+  const returnUrl = `${getBackendBaseUrl()}/api/v1/payments/payos/return`;
+  const cancelUrl = `${getBackendBaseUrl()}/api/v1/payments/payos/cancel`;
 
   const paymentLink = await payos.paymentRequests.create({
     orderCode: order.payosOrderCode,

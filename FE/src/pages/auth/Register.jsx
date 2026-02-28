@@ -35,7 +35,7 @@ const RegisterPage = () => {
 
     try {
       // 2. Gọi API đăng ký (Bước 1): gửi mã OTP qua email
-      // Đường dẫn '/auth/register' sẽ nối với baseURL '/api' -> '/api/auth/register'
+      // Đường dẫn '/auth/register' sẽ nối với baseURL '/api/v1' -> '/api/v1/auth/register'
       const res = await axiosClient.post("/auth/register", {
         fullName: formData.fullName,
         email: formData.email,

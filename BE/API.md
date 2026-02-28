@@ -4,9 +4,9 @@ Base URL (local): `http://localhost:5000` (hoặc `http://localhost:<PORT>` nế
 
 Base path:
 
-- Auth: `/api/auth`
-- Users: `/api/users`
-- Products: `/api/products`
+- Auth: `/api/v1/auth`
+- Users: `/api/v1/users`
+- Products: `/api/v1/products`
 
 ## Health / Default
 
@@ -29,9 +29,9 @@ curl http://localhost:5000/
 
 Để chức năng gửi email (OTP đăng ký / reset password) hoạt động với Gmail:
 
-1) Bật **2-Step Verification** cho tài khoản Gmail.
-2) Tạo **App Password** (Google Account → Security → App Passwords).
-3) Cập nhật file `BE/server/.env`:
+1. Bật **2-Step Verification** cho tài khoản Gmail.
+2. Tạo **App Password** (Google Account → Security → App Passwords).
+3. Cập nhật file `BE/server/.env`:
 
 ```dotenv
 SMTP_HOST=smtp.gmail.com
@@ -43,7 +43,7 @@ SMTP_FROM="TechGear <your_gmail@gmail.com>"
 
 Gợi ý: nếu bạn dùng port `587` thì cần `SMTP_PORT=587` (TLS STARTTLS). Hiện code auto `secure=true` khi port là `465`.
 
-### POST /api/auth/register
+### POST /api/v1/auth/register
 
 - Mục đích: đăng ký (bước 1) — gửi mã OTP về email (chưa tạo user thật)
 - Content-Type: `application/json`
@@ -76,7 +76,7 @@ Lỗi thường gặp:
 
 ---
 
-### POST /api/auth/register/confirm
+### POST /api/v1/auth/register/confirm
 
 - Mục đích: đăng ký (bước 2) — nhập OTP để tạo tài khoản thật và có thể sử dụng
 - Content-Type: `application/json`
@@ -111,7 +111,7 @@ Lỗi thường gặp:
 
 ---
 
-### POST /api/auth/register/resend
+### POST /api/v1/auth/register/resend
 
 - Mục đích: gửi lại OTP đăng ký
 - Content-Type: `application/json`
@@ -136,7 +136,7 @@ Response (200):
 
 ---
 
-### POST /api/auth/login
+### POST /api/v1/auth/login
 
 - Mục đích: đăng nhập
 - Content-Type: `application/json`
@@ -169,7 +169,7 @@ Lỗi thường gặp:
 
 ---
 
-### POST /api/auth/reset-password
+### POST /api/v1/auth/reset-password
 
 - Mục đích: gửi email link đặt lại mật khẩu
 - Content-Type: `application/json`
@@ -192,7 +192,7 @@ Response (200):
 
 ---
 
-### POST /api/auth/reset-password/confirm
+### POST /api/v1/auth/reset-password/confirm
 
 - Mục đích: xác nhận đặt lại mật khẩu bằng token từ link email
 - Content-Type: `application/json`
@@ -208,7 +208,7 @@ Request body:
 
 ---
 
-### GET /api/auth/me
+### GET /api/v1/auth/me
 
 - Mục đích: lấy thông tin user đang đăng nhập
 - Auth: `Authorization: Bearer <token>`
@@ -216,21 +216,21 @@ Request body:
 Ví dụ:
 
 ```bash
-curl -H "Authorization: Bearer <token>" http://localhost:5000/api/auth/me
+curl -H "Authorization: Bearer <token>" http://localhost:5000/api/v1/auth/me
 ```
 
 ---
 
 ## User APIs
 
-### GET /api/users/me
+### GET /api/v1/users/me
 
 - Mục đích: lấy profile hiện tại
 - Auth: `Authorization: Bearer <token>`
 
 ---
 
-### PUT /api/users/me
+### PUT /api/v1/users/me
 
 - Mục đích: cập nhật thông tin user (tên, email, địa chỉ, số điện thoại, tỉnh/thành phố)
 - Auth: `Authorization: Bearer <token>`
@@ -254,7 +254,7 @@ Response (200): user (không có password)
 
 ## Product APIs
 
-### GET /api/products
+### GET /api/v1/products
 
 - Mục đích: lấy danh sách sản phẩm
 - Query optional:
@@ -263,22 +263,22 @@ Response (200): user (không có password)
 Ví dụ:
 
 ```bash
-curl "http://localhost:5000/api/products"
-curl "http://localhost:5000/api/products?category=PC%20Gaming"
+curl "http://localhost:5000/api/v1/products"
+curl "http://localhost:5000/api/v1/products?category=PC%20Gaming"
 ```
 
 Response (200): array sản phẩm
 
 ---
 
-### GET /api/products/:id
+### GET /api/v1/products/:id
 
 - Mục đích: lấy chi tiết sản phẩm theo MongoDB ObjectId
 
 Ví dụ:
 
 ```bash
-curl "http://localhost:5000/api/products/65f000000000000000000000"
+curl "http://localhost:5000/api/v1/products/65f000000000000000000000"
 ```
 
 Response:
@@ -288,7 +288,7 @@ Response:
 
 ---
 
-### POST /api/products
+### POST /api/v1/products
 
 - Mục đích: tạo sản phẩm mới (hiện chưa có auth/admin middleware)
 - Content-Type: `application/json`
