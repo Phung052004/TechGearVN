@@ -5,6 +5,11 @@ export async function login({ email, password }) {
   return data;
 }
 
+export async function loginWithGoogle({ credential }) {
+  const { data } = await apiClient.post("/auth/google", { credential });
+  return data;
+}
+
 export async function register(payload) {
   // Registration is now a 2-step flow (send OTP)
   const { data } = await apiClient.post("/auth/register", payload);

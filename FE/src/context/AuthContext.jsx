@@ -71,6 +71,27 @@ export function AuthProvider({ children }) {
     [refreshMe],
   );
 
+  const loginWithGoogle = useCallback(
+    async ({ credential }) => {
+      const result = await authService.loginWithGoogle({ credential });
+
+      if (result?.token) {
+        localStorage.setItem("token", result.token);
+      }
+      localStorage.setItem("user", JSON.stringify(result ?? null));
+      window.dispatchEvent(new Event("auth:changed"));
+
+      if (result && typeof result === "object") {
+        const { token: _token, ...rest } = result;
+        setUser(rest);
+      }
+
+      await refreshMe();
+      return result;
+    },
+    [refreshMe],
+  );
+
   const logout = useCallback(async () => {
     const result = await authService.logout();
     localStorage.removeItem("token");
@@ -86,11 +107,12 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       loading,
       login,
+      loginWithGoogle,
       logout,
       refreshMe,
       setUser,
     }),
-    [user, loading, login, logout, refreshMe],
+    [user, loading, login, loginWithGoogle, logout, refreshMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

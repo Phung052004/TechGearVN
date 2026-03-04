@@ -1,12 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // Thêm useNavigate để chuyển trang
-import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast } from "react-toastify"; // Import thư viện thông báo
 import axiosClient from "../../api/axiosClient"; // Import API
+import { useAuth } from "../../context";
 
 const RegisterPage = () => {
   const navigate = useNavigate(); // Hook để chuyển hướng trang
+  const { loginWithGoogle } = useAuth();
+
+  const googleBtnRef = useRef(null);
+
+  const googleClientId = useMemo(
+    () => (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "").trim(),
+    [],
+  );
 
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
@@ -58,6 +66,70 @@ const RegisterPage = () => {
       toast.error(message);
     }
   };
+
+  useEffect(() => {
+    if (!googleClientId) return;
+
+    let disposed = false;
+
+    const init = async () => {
+      const gsi = await waitForGoogleGsiClient({ timeoutMs: 8000 });
+      if (disposed) return;
+      if (!gsi) return;
+      if (!googleBtnRef.current) return;
+
+      try {
+        gsi.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            const credential = response?.credential;
+            if (!credential) {
+              toast.error("Đăng nhập Google thất bại");
+              return;
+            }
+            try {
+              const result = await loginWithGoogle({ credential });
+              toast.success("Đăng nhập thành công!");
+
+              const role = result?.role || result?.user?.role || "";
+              if (role === "ADMIN")
+                return navigate("/admin", { replace: true });
+              if (role === "STAFF")
+                return navigate("/staff", { replace: true });
+              return navigate("/", { replace: true });
+            } catch (error) {
+              const message =
+                error.response?.data?.message || "Đăng nhập Google thất bại";
+              toast.error(message);
+            }
+          },
+        });
+
+        googleBtnRef.current.innerHTML = "";
+        gsi.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "outline",
+          size: "large",
+          text: "signup_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width: "400",
+        });
+      } catch {
+        // noop
+      }
+    };
+
+    init();
+
+    return () => {
+      disposed = true;
+      try {
+        window.google?.accounts?.id?.cancel();
+      } catch {
+        // ignore
+      }
+    };
+  }, [googleClientId, loginWithGoogle, navigate]);
 
   return (
     <div className="bg-gray-50 min-h-screen pb-10">
@@ -188,6 +260,31 @@ const RegisterPage = () => {
               </button>
             </div>
 
+            {/* Google Signup/Login */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  Hoặc đăng ký bằng
+                </span>
+              </div>
+            </div>
+
+            {googleClientId ? (
+              <div className="w-full flex justify-center">
+                <div
+                  ref={googleBtnRef}
+                  className="w-full flex justify-center"
+                />
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">
+                Google signup chưa được cấu hình (thiếu VITE_GOOGLE_CLIENT_ID).
+              </div>
+            )}
+
             {/* Google & Login Link giữ nguyên... */}
             <div className="mt-4 pt-4 border-t border-gray-100 text-sm">
               <Link
@@ -203,5 +300,17 @@ const RegisterPage = () => {
     </div>
   );
 };
+
+async function waitForGoogleGsiClient({ timeoutMs }) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const gsi = window.google;
+    if (gsi?.accounts?.id?.initialize && gsi?.accounts?.id?.renderButton) {
+      return gsi;
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return null;
+}
 
 export default RegisterPage;
