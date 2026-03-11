@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const { googleLogin } = require("./server/controllers/authController");
 
 const API_PREFIX = "/api/v1";
 
@@ -8,6 +9,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Explicit alias for Google login (some deployments were missing this route)
+app.post(`${API_PREFIX}/auth/google`, googleLogin);
 
 // Routes
 app.use(`${API_PREFIX}/auth`, require("./server/routes/authRoutes"));
