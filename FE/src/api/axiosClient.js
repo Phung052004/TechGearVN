@@ -1,9 +1,20 @@
 import axios from "axios";
 
+const getBaseURL = () => {
+  const raw = (import.meta.env.VITE_API_URL ?? "").trim();
+  const isLocalhost = /^https?:\/\/localhost(?::\d+)?(\/|$)/i.test(raw);
+
+  // In production, default to same-origin API to work on all devices.
+  if (import.meta.env.PROD) {
+    return raw && !isLocalhost ? raw : "/api/v1";
+  }
+
+  // In dev, allow env override; fallback to local backend.
+  return raw || "http://localhost:5000/api/v1";
+};
+
 const axiosClient = axios.create({
-  baseURL:
-    (import.meta.env.VITE_API_URL ?? "").trim() ||
-    "http://localhost:5000/api/v1", // Đường dẫn gốc tới Backend
+  baseURL: getBaseURL(),
   headers: {
     "Content-Type": "application/json",
   },
