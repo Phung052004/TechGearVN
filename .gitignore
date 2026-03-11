@@ -1,0 +1,38 @@
+# Node / JS
+node_modules/
+**/node_modules/
+
+# Vite / build output
+FE/dist/
+FE/dist-ssr/
+dist/
+dist-ssr/
+
+# Env files (do NOT commit secrets)
+.env
+.env.*
+BE/server/.env
+FE/.env
+FE/.env.*
+
+# Vercel
+.vercel/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

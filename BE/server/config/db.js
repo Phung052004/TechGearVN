@@ -2,11 +2,28 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI is not set");
+    }
+
+    // Reuse existing connection in serverless environments
+    if (mongoose.connection.readyState === 1) {
+      return mongoose.connection;
+    }
+
+    // Cache across hot reloads / lambda invocations
+    global.__MONGOOSE_CONN__ = global.__MONGOOSE_CONN__ ?? null;
+    if (global.__MONGOOSE_CONN__) {
+      return global.__MONGOOSE_CONN__;
+    }
+
     const conn = await mongoose.connect(process.env.MONGO_URI);
+    global.__MONGOOSE_CONN__ = conn;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn;
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+    console.error(`MongoDB connection error: ${error.message}`);
+    throw error;
   }
 };
 

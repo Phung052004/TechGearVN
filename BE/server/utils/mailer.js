@@ -20,7 +20,7 @@ function createTransport() {
     ].filter(Boolean);
     throw new Error(
       `Missing SMTP configuration: ${missing.join(", ")}. ` +
-        "Please set them in BE/server/.env. For Gmail, use an App Password (not your normal password).",
+        "Please set them as environment variables (Vercel Project Settings) or locally in BE/server/.env. For Gmail, use an App Password (not your normal password).",
     );
   }
 
