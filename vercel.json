@@ -9,8 +9,14 @@
     }
   ],
   "routes": [
+    { "src": "/api/v1$", "dest": "BE/api/index.js" },
     { "src": "/api/v1/(.*)", "dest": "BE/api/index.js" },
+
+    { "src": "/assets/(.*)", "dest": "FE/assets/$1" },
+    { "src": "/seed/(.*)", "dest": "FE/seed/$1" },
+    { "src": "/vite.svg", "dest": "FE/vite.svg" },
+    { "src": "/placeholder-product.svg", "dest": "FE/placeholder-product.svg" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "FE/index.html" }
   ]
 }
