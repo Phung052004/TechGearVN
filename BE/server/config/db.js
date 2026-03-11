@@ -17,7 +17,11 @@ const connectDB = async () => {
       return global.__MONGOOSE_CONN__;
     }
 
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      // Fail fast in serverless to avoid long hanging requests.
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
     global.__MONGOOSE_CONN__ = conn;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
