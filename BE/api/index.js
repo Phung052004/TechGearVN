@@ -23,6 +23,17 @@ module.exports = async (req, res) => {
     console.error("API handler error:", err);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ message: "Internal Server Error" }));
+
+    const shouldExpose = String(process.env.DEBUG_ERRORS || "").toLowerCase() === "true";
+    const payload = { message: "Internal Server Error" };
+    if (shouldExpose) {
+      payload.error = {
+        name: err?.name,
+        message: err?.message,
+        code: err?.code,
+      };
+    }
+
+    res.end(JSON.stringify(payload));
   }
 };
