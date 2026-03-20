@@ -17,6 +17,14 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     // Stored as hash (bcrypt). Kept as "password" to avoid breaking existing code.
     password: { type: String, required: true },
+    // Social login (optional)
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    googleId: { type: String, index: true, sparse: true },
+    avatarUrl: { type: String },
     phone: { type: String },
     address: { type: String },
     provinceCity: { type: String },

@@ -162,20 +162,252 @@ async function getAllOrders() {
   return Order.find({}).sort({ createdAt: -1 });
 }
 
-async function updateOrderStatus(id, { orderStatus, paymentStatus } = {}) {
+async function getAllOrdersForUser(user) {
+  if (!user) return getAllOrders();
+
+  if (user.role === "DELIVERY") {
+    return Order.find({
+      orderStatus: "SHIPPING",
+      $or: [{ deliveryAssignee: null }, { deliveryAssignee: user._id }],
+    })
+      .populate("deliveryAssignee", "fullName email role")
+      .sort({ createdAt: -1 });
+  }
+
+  return Order.find({})
+    .populate("deliveryAssignee", "fullName email role")
+    .sort({ createdAt: -1 });
+}
+
+async function claimOrder(orderId, user) {
+  if (!user || user.role !== "DELIVERY") {
+    throw createHttpError(403, "Không có quyền truy cập");
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) throw createHttpError(404, "Không tìm thấy đơn hàng");
+
+  if (order.orderStatus !== "SHIPPING") {
+    throw createHttpError(400, "Đơn chưa sẵn sàng để giao");
+  }
+
+  if (order.deliveryAssignee) {
+    if (String(order.deliveryAssignee) !== String(user._id)) {
+      throw createHttpError(409, "Đơn đã có người nhận giao");
+    }
+    return order;
+  }
+
+  order.deliveryAssignee = user._id;
+  order.deliveryClaimedAt = new Date();
+  return order.save();
+}
+
+async function updateOrderStatus(id, payload = {}) {
+  const { orderStatus, paymentStatus, deliveryAssignee } = payload;
   const order = await Order.findById(id);
   if (!order) throw createHttpError(404, "Không tìm thấy đơn hàng");
+
+  const prevStatus = order.orderStatus;
 
   if (orderStatus !== undefined) order.orderStatus = orderStatus;
   if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
 
+  // Handle delivery assignment
+  if (deliveryAssignee !== undefined) {
+    if (deliveryAssignee && typeof deliveryAssignee === "string") {
+      // Validate delivery person exists when assigning
+      const User = require("../models/User");
+      const deliveryPerson = await User.findById(deliveryAssignee);
+      if (!deliveryPerson || deliveryPerson.role !== "DELIVERY") {
+        throw createHttpError(400, "Người giao hàng không hợp lệ");
+      }
+      order.deliveryAssignee = deliveryAssignee;
+      // Note: Don't set deliveryClaimedAt here - delivery person will set it when they claim
+    } else if (!deliveryAssignee) {
+      order.deliveryAssignee = null;
+    }
+  }
+
+  // When moving into SHIPPING, clear any previous delivery assignment.
+  // When moving out of SHIPPING, also clear assignment-related fields.
+  if (orderStatus !== undefined && orderStatus !== prevStatus) {
+    if (orderStatus === "SHIPPING") {
+      if (!deliveryAssignee) {
+        order.deliveryAssignee = null;
+      }
+      order.deliveryClaimedAt = undefined;
+      order.deliveredAt = undefined;
+    } else if (prevStatus === "SHIPPING") {
+      order.deliveryAssignee = null;
+      order.deliveryClaimedAt = undefined;
+      order.deliveredAt = undefined;
+    }
+  }
+
+  if (orderStatus === "COMPLETED" && !order.deliveredAt) {
+    order.deliveredAt = new Date();
+  }
+
   return order.save();
 }
+
+async function updateOrderStatusForUser(id, payload = {}, user) {
+  if (!user) throw createHttpError(401, "Chưa đăng nhập");
+
+  if (user.role === "DELIVERY") {
+    const { orderStatus, failureReason } = payload || {};
+    if (
+      payload &&
+      Object.prototype.hasOwnProperty.call(payload, "paymentStatus")
+    ) {
+      throw createHttpError(403, "Không có quyền cập nhật thanh toán");
+    }
+    if (
+      orderStatus &&
+      !["SHIPPING", "COMPLETED", "DELIVERY_FAILED"].includes(orderStatus)
+    ) {
+      throw createHttpError(400, "Trạng thái không hợp lệ cho giao hàng");
+    }
+
+    const order = await Order.findById(id);
+    if (!order) throw createHttpError(404, "Không tìm thấy đơn hàng");
+
+    if (
+      !order.deliveryAssignee ||
+      String(order.deliveryAssignee) !== String(user._id)
+    ) {
+      throw createHttpError(403, "Bạn chưa nhận đơn này");
+    }
+
+    if (orderStatus !== undefined) order.orderStatus = orderStatus;
+
+    if (orderStatus === "COMPLETED" && !order.deliveredAt) {
+      order.deliveredAt = new Date();
+    }
+
+    // Handle delivery failure
+    if (orderStatus === "DELIVERY_FAILED") {
+      // Keep deliveryAssignee to track failures for this delivery person
+      // This allows us to count their failed deliveries for metrics
+      order.deliveryClaimedAt = null;
+      // Keep the failure reason if provided
+      if (failureReason) {
+        order.note =
+          (order.note || "") + `\n[Giao hàng thất bại] ${failureReason}`;
+      }
+    }
+
+    return order.save();
+  }
+
+  return updateOrderStatus(id, payload);
+}
+
+const getDeliveryPeople = async () => {
+  const Order = require("../models/Order");
+  const User = require("../models/User");
+
+  // Get all delivery persons
+  const deliveryPersons = await User.find({ role: "DELIVERY" }).select(
+    "_id fullName email phone avatarUrl",
+  );
+
+  // Calculate metrics for each delivery person
+  const peopleWithMetrics = await Promise.all(
+    deliveryPersons.map(async (person) => {
+      // Completed deliveries
+      const completed = await Order.countDocuments({
+        deliveryAssignee: person._id,
+        orderStatus: "COMPLETED",
+      });
+
+      // Failed deliveries
+      const failed = await Order.countDocuments({
+        deliveryAssignee: person._id,
+        orderStatus: "DELIVERY_FAILED",
+      });
+
+      // Only count finished deliveries (completed + failed) for success rate
+      const finishedCount = completed + failed;
+
+      // Success rate based only on finished deliveries
+      const successRate =
+        finishedCount > 0 ? Math.round((completed / finishedCount) * 100) : 0;
+
+      return {
+        _id: person._id,
+        fullName: person.fullName,
+        email: person.email,
+        phone: person.phone,
+        avatarUrl: person.avatarUrl,
+        completedCount: completed,
+        failureCount: failed,
+        assignedCount: finishedCount, // Only finished deliveries
+        successRate: successRate,
+      };
+    }),
+  );
+
+  // Sort by success rate (highest first) then by completed count
+  return peopleWithMetrics.sort(
+    (a, b) =>
+      b.successRate - a.successRate || b.completedCount - a.completedCount,
+  );
+};
+
+const getDeliveryMetrics = async () => {
+  const Order = require("../models/Order");
+  const User = require("../models/User");
+
+  // Get delivery people metrics
+  const byPerson = await getDeliveryPeople();
+
+  // Calculate total metrics - only from finished deliveries
+  const totalCompleted = await Order.countDocuments({
+    orderStatus: "COMPLETED",
+  });
+  const totalFailed = await Order.countDocuments({
+    orderStatus: "DELIVERY_FAILED",
+  });
+  const totalFinished = totalCompleted + totalFailed;
+  const totalDeliveryPersons = await User.countDocuments({ role: "DELIVERY" });
+
+  const overallSuccessRate =
+    totalFinished > 0 ? Math.round((totalCompleted / totalFinished) * 100) : 0;
+
+  // Get failure reasons
+  const failuredOrders = await Order.find({
+    orderStatus: "DELIVERY_FAILED",
+  }).select("note");
+  const failureReasons = {}; // Count by reason
+  failuredOrders.forEach((order) => {
+    const reason = order.note || "Unknown reason";
+    failureReasons[reason] = (failureReasons[reason] || 0) + 1;
+  });
+
+  return {
+    totals: {
+      deliveryPersonCount: totalDeliveryPersons,
+      totalAssigned: totalFinished,
+      totalCompleted,
+      totalFailed,
+      overallSuccessRate,
+    },
+    failureReasons,
+    byPerson,
+  };
+};
 
 module.exports = {
   createOrder,
   getMyOrders,
   getOrderById,
   getAllOrders,
+  getAllOrdersForUser,
   updateOrderStatus,
+  updateOrderStatusForUser,
+  claimOrder,
+  getDeliveryPeople,
+  getDeliveryMetrics,
 };

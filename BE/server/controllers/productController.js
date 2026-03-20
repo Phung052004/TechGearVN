@@ -72,3 +72,75 @@ exports.replaceProductSpecs = async (req, res) => {
     return res.status(status).json({ message: error.message });
   }
 };
+
+// --- UPLOAD PRODUCT IMAGE ---
+exports.uploadProductImage = async (req, res) => {
+  try {
+    if (!req.file || !req.file.secure_url) {
+      return res.status(400).json({
+        message: "Image upload failed or no file provided",
+      });
+    }
+
+    return res.status(201).json({
+      message: "Image uploaded successfully",
+      url: req.file.secure_url,
+    });
+  } catch (error) {
+    const status = error?.statusCode || 500;
+    console.error("uploadProductImage error:", error);
+    return res.status(status).json({ message: error.message });
+  }
+};
+
+// --- DELETE PRODUCT IMAGE ---
+exports.deleteProductImage = async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        message: "Image URL is required",
+      });
+    }
+
+    const updated = await productService.deleteProductImage(
+      req.params.id,
+      imageUrl,
+    );
+    return res.json({
+      message: "Image deleted successfully",
+      product: updated,
+    });
+  } catch (error) {
+    const status = error?.statusCode || 400;
+    if (status === 500) console.error("deleteProductImage error:", error);
+    return res.status(status).json({ message: error.message });
+  }
+};
+
+// --- UPDATE PRODUCT THUMBNAIL ---
+exports.updateProductThumbnail = async (req, res) => {
+  try {
+    const { thumbnailUrl } = req.body;
+
+    if (!thumbnailUrl) {
+      return res.status(400).json({
+        message: "Thumbnail URL is required",
+      });
+    }
+
+    const updated = await productService.updateProductThumbnail(
+      req.params.id,
+      thumbnailUrl,
+    );
+    return res.json({
+      message: "Thumbnail updated successfully",
+      product: updated,
+    });
+  } catch (error) {
+    const status = error?.statusCode || 400;
+    if (status === 500) console.error("updateProductThumbnail error:", error);
+    return res.status(status).json({ message: error.message });
+  }
+};

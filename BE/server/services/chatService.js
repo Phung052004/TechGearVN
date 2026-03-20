@@ -22,9 +22,29 @@ async function getOrCreateMyRoom(userId) {
 }
 
 async function listRooms() {
-  return ChatRoom.find({})
+  const rooms = await ChatRoom.find({})
     .populate("user", "fullName email")
     .sort({ updatedAt: -1 });
+
+  const roomIds = rooms.map((r) => r._id);
+  if (roomIds.length === 0) return [];
+
+  const unreadAgg = await ChatMessage.aggregate([
+    { $match: { room: { $in: roomIds }, isRead: false } },
+    { $group: { _id: "$room", unreadCount: { $sum: 1 } } },
+  ]);
+
+  const unreadMap = new Map(
+    unreadAgg.map((x) => [String(x._id), Number(x.unreadCount || 0)]),
+  );
+
+  return rooms.map((r) => {
+    const json = r.toJSON ? r.toJSON() : r;
+    return {
+      ...json,
+      unreadCount: unreadMap.get(String(r._id)) || 0,
+    };
+  });
 }
 
 async function closeRoom(roomId) {
@@ -42,6 +62,14 @@ async function getMessages(roomId, user) {
     .populate("sender", "fullName role")
     .sort({ createdAt: 1 });
 
+  const isStaff = ["ADMIN", "STAFF"].includes(user.role);
+  if (isStaff) {
+    await ChatMessage.updateMany(
+      { room: room._id, isRead: false },
+      { $set: { isRead: true } },
+    );
+  }
+
   return { room, messages };
 }
 
@@ -55,10 +83,15 @@ async function sendMessage(roomId, user, rawMessage) {
   const message = String(rawMessage || "").trim();
   if (!message) throw createHttpError(400, "Thiếu message");
 
+  // `isRead` is used for staff-side unread tracking.
+  // Customer -> staff messages start unread; staff -> customer messages are considered read.
+  const isStaff = ["ADMIN", "STAFF"].includes(user.role);
+
   const created = await ChatMessage.create({
     room: room._id,
     sender: user._id,
     message,
+    isRead: isStaff,
   });
 
   room.updatedAt = new Date();

@@ -29,11 +29,11 @@ exports.closeRoom = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { messages } = await chatService.getMessages(
+    const { room, messages } = await chatService.getMessages(
       req.params.roomId,
       req.user,
     );
-    return res.json(messages);
+    return res.json({ room, messages });
   } catch (error) {
     return res.status(error.statusCode || 500).json({ message: error.message });
   }

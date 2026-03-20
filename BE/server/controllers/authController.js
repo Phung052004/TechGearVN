@@ -51,6 +51,19 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+// --- ĐĂNG NHẬP/ĐĂNG KÝ BẰNG GOOGLE ---
+// POST /api/v1/auth/google { credential }
+exports.googleLogin = async (req, res) => {
+  try {
+    const result = await authService.loginWithGoogle(req.body);
+    return res.json(result);
+  } catch (error) {
+    const status = error?.statusCode || 500;
+    if (status === 500) console.error("googleLogin error:", error);
+    return res.status(status).json({ message: error.message });
+  }
+};
+
 // --- QUÊN MẬT KHẨU: GỬI LINK RESET QUA EMAIL ---
 // POST /api/auth/reset-password { email }
 exports.resetPassword = async (req, res) => {

@@ -5,6 +5,7 @@ const {
   confirmRegister,
   resendRegisterCode,
   loginUser,
+  googleLogin,
   resetPassword,
   confirmResetPassword,
   verifyEmail,
@@ -16,6 +17,7 @@ router.post("/register", registerUser);
 router.post("/register/confirm", confirmRegister);
 router.post("/register/resend", resendRegisterCode);
 router.post("/login", loginUser);
+router.post("/google", googleLogin);
 router.post("/reset-password", resetPassword);
 router.post("/reset-password/confirm", confirmResetPassword);
 router.get("/verify-email", verifyEmail);

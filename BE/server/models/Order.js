@@ -45,6 +45,7 @@ const orderSchema = new mongoose.Schema(
         "PROCESSING",
         "SHIPPING",
         "COMPLETED",
+        "DELIVERY_FAILED",
         "CANCELLED",
         "RETURNED",
       ],
@@ -64,6 +65,16 @@ const orderSchema = new mongoose.Schema(
     // PayOS mapping fields (needed because PayOS orderCode is numeric)
     payosOrderCode: { type: Number, index: true },
     payosPaymentLinkId: { type: String, trim: true },
+
+    // Delivery assignment
+    deliveryAssignee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+      default: null,
+    },
+    deliveryClaimedAt: { type: Date },
+    deliveredAt: { type: Date },
   },
   { timestamps: true },
 );

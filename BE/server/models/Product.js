@@ -19,6 +19,7 @@ const productSchema = new mongoose.Schema(
     brand: { type: mongoose.Schema.Types.ObjectId, ref: "Brand", index: true },
 
     thumbnail: { type: String, required: true },
+    images: [{ type: String }], // Array of image URLs (detail images)
     description: { type: String },
 
     status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },

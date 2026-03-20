@@ -7,9 +7,16 @@ const {
   updateProduct,
   getProductSpecs,
   replaceProductSpecs,
+  uploadProductImage,
+  deleteProductImage,
+  updateProductThumbnail,
 } = require("../controllers/productController");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
+const {
+  upload,
+  uploadToCloudinary,
+} = require("../middleware/uploadMiddleware");
 
 router.get("/", getProducts); // Lấy danh sách
 router.get("/:id", getProductById); // Lấy chi tiết
@@ -22,6 +29,30 @@ router.put(
   protect,
   authorize("ADMIN", "STAFF"),
   replaceProductSpecs,
+);
+
+// --- IMAGE MANAGEMENT ---
+router.post(
+  "/upload-image",
+  protect,
+  authorize("ADMIN", "STAFF"),
+  upload.single("file"),
+  uploadToCloudinary,
+  uploadProductImage,
+);
+
+router.delete(
+  "/:id/images",
+  protect,
+  authorize("ADMIN", "STAFF"),
+  deleteProductImage,
+);
+
+router.put(
+  "/:id/thumbnail",
+  protect,
+  authorize("ADMIN", "STAFF"),
+  updateProductThumbnail,
 );
 
 module.exports = router;

@@ -285,6 +285,41 @@ async function replaceProductSpecs(id, specsInput) {
   return saved;
 }
 
+// --- DELETE PRODUCT IMAGE ---
+async function deleteProductImage(productId, imageUrl) {
+  if (!isObjectId(productId)) {
+    throw createHttpError(400, "Product ID không hợp lệ");
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) throw createHttpError(404, "Không tìm thấy sản phẩm");
+
+  // Remove from images array
+  product.images = (product.images || []).filter((img) => img !== imageUrl);
+  await product.save();
+
+  return product;
+}
+
+// --- UPDATE PRODUCT THUMBNAIL ---
+async function updateProductThumbnail(productId, thumbnailUrl) {
+  if (!isObjectId(productId)) {
+    throw createHttpError(400, "Product ID không hợp lệ");
+  }
+
+  if (!thumbnailUrl) {
+    throw createHttpError(400, "Thumbnail URL không được để trống");
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) throw createHttpError(404, "Không tìm thấy sản phẩm");
+
+  product.thumbnail = thumbnailUrl;
+  await product.save();
+
+  return product;
+}
+
 module.exports = {
   getProducts,
   getProductById,
@@ -292,4 +327,6 @@ module.exports = {
   updateProduct,
   getProductSpecs,
   replaceProductSpecs,
+  deleteProductImage,
+  updateProductThumbnail,
 };

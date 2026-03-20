@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { googleLogin } = require("./server/controllers/authController");
+const path = require("path");
 
 const API_PREFIX = "/api/v1";
 
@@ -10,8 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Explicit alias for Google login (some deployments were missing this route)
-app.post(`${API_PREFIX}/auth/google`, googleLogin);
+// Static file serving for uploaded images
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Routes
 app.use(`${API_PREFIX}/auth`, require("./server/routes/authRoutes"));
@@ -47,6 +47,7 @@ app.use(
 );
 
 app.use(`${API_PREFIX}/chat`, require("./server/routes/chatRoutes"));
+app.use(`${API_PREFIX}/images`, require("./server/routes/imageRoutes"));
 
 // Default route
 app.get("/", (req, res) => {

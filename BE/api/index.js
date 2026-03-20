@@ -1,9 +1,6 @@
 const path = require("path");
 const dotenv = require("dotenv");
 
-const connectDB = require("../server/config/db");
-const app = require("../app");
-
 // Load local .env only when not running on Vercel/production
 if (process.env.NODE_ENV !== "production") {
   dotenv.config({ path: path.join(__dirname, "..", "server", ".env") });
@@ -11,6 +8,11 @@ if (process.env.NODE_ENV !== "production") {
 
 module.exports = async (req, res) => {
   try {
+    // Defer loading app/deps until invocation so module-load errors
+    // don't crash the function and show up as FUNCTION_INVOCATION_FAILED.
+    const connectDB = require("../server/config/db");
+    const app = require("../app");
+
     await connectDB();
 
     // Support both direct '/api/v1/*' and rewrites that strip the prefix
@@ -24,7 +26,8 @@ module.exports = async (req, res) => {
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
 
-    const shouldExpose = String(process.env.DEBUG_ERRORS || "").toLowerCase() === "true";
+    const shouldExpose =
+      String(process.env.DEBUG_ERRORS || "").toLowerCase() === "true";
     const payload = { message: "Internal Server Error" };
     if (shouldExpose) {
       payload.error = {

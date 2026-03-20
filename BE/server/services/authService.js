@@ -1,14 +1,25 @@
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 
 const User = require("../models/User");
 const PendingRegistration = require("../models/PendingRegistration");
 const { sendEmail } = require("../utils/mailer");
 const { createHttpError } = require("../utils/httpError");
 
+const GOOGLE_CLIENT_IDS = String(process.env.GOOGLE_CLIENT_ID ?? "")
+  .split(",")
+  .map((x) => x.trim())
+  .filter(Boolean);
+
+const PRIMARY_GOOGLE_CLIENT_ID = GOOGLE_CLIENT_IDS[0] || "";
+const googleOauthClient = PRIMARY_GOOGLE_CLIENT_ID
+  ? new OAuth2Client(PRIMARY_GOOGLE_CLIENT_ID)
+  : null;
+
 const FRONTEND_URL =
-  (process.env.FRONTEND_URL ?? "").trim() || "http://localhost:5173";
+  (process.env.FRONTEND_URL ?? "").trim() || "http://localhost:5174";
 
 const REGISTER_OTP_TTL_MINUTES = Number(
   (process.env.REGISTER_OTP_TTL_MINUTES ?? "").trim() || "10",
@@ -16,6 +27,12 @@ const REGISTER_OTP_TTL_MINUTES = Number(
 
 function generateToken(id) {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+}
+
+async function hashRandomPassword() {
+  const salt = await bcrypt.genSalt(10);
+  const random = crypto.randomBytes(32).toString("hex");
+  return bcrypt.hash(random, salt);
 }
 
 function minutesFromNow(m) {
@@ -226,6 +243,88 @@ async function login({ email, password }) {
   };
 }
 
+async function loginWithGoogle({ credential }) {
+  const idToken = (credential ?? "").trim();
+  if (!idToken) throw createHttpError(400, "Thiếu credential (id_token)");
+
+  if (!googleOauthClient || GOOGLE_CLIENT_IDS.length === 0) {
+    throw createHttpError(
+      500,
+      "Server chưa cấu hình GOOGLE_CLIENT_ID để đăng nhập Google",
+    );
+  }
+
+  let payload;
+  try {
+    const ticket = await googleOauthClient.verifyIdToken({
+      idToken,
+      audience:
+        GOOGLE_CLIENT_IDS.length === 1
+          ? GOOGLE_CLIENT_IDS[0]
+          : GOOGLE_CLIENT_IDS,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    throw createHttpError(401, "Google credential không hợp lệ");
+  }
+
+  const email = (payload?.email ?? "").trim().toLowerCase();
+  const emailVerified = Boolean(payload?.email_verified);
+  const googleId = (payload?.sub ?? "").trim();
+  const fullName = (payload?.name ?? "").trim() || "Google User";
+  const avatarUrl = (payload?.picture ?? "").trim();
+
+  if (!email || !googleId) {
+    throw createHttpError(401, "Google credential thiếu thông tin email");
+  }
+  if (!emailVerified) {
+    throw createHttpError(403, "Email Google chưa được xác thực");
+  }
+
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    user = await User.create({
+      fullName,
+      email,
+      password: await hashRandomPassword(),
+      isVerified: true,
+      authProvider: "google",
+      googleId,
+      avatarUrl: avatarUrl || undefined,
+    });
+  } else {
+    if (user.isBlocked) {
+      throw createHttpError(403, "Tài khoản đã bị khóa");
+    }
+
+    // If the user existed from local registration but not verified,
+    // allow Google login (Google email is verified) and mark verified.
+    const needsUpdate =
+      user.isVerified === false ||
+      user.authProvider !== "google" ||
+      (!user.googleId && googleId) ||
+      (!user.avatarUrl && avatarUrl);
+
+    if (needsUpdate) {
+      user.isVerified = true;
+      user.authProvider = "google";
+      if (googleId) user.googleId = googleId;
+      if (avatarUrl) user.avatarUrl = avatarUrl;
+      await user.save();
+    }
+  }
+
+  return {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    isVerified: user.isVerified,
+    token: generateToken(user._id),
+  };
+}
+
 async function requestPasswordReset(email) {
   const emailTrimmed = (email ?? "").trim();
   const genericResponse = {
@@ -333,6 +432,7 @@ module.exports = {
   confirmRegister,
   resendRegisterCode,
   login,
+  loginWithGoogle,
   requestPasswordReset,
   confirmPasswordReset,
   verifyEmail,

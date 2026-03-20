@@ -33,18 +33,49 @@ exports.getOrderById = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await orderService.getAllOrders();
+    const orders = await orderService.getAllOrdersForUser(req.user);
     return res.json(orders);
   } catch (error) {
     return res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
-exports.updateOrderStatus = async (req, res) => {
+exports.claimOrder = async (req, res) => {
   try {
-    const saved = await orderService.updateOrderStatus(req.params.id, req.body);
+    const saved = await orderService.claimOrder(req.params.id, req.user);
     return res.json(saved);
   } catch (error) {
     return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const saved = await orderService.updateOrderStatusForUser(
+      req.params.id,
+      req.body,
+      req.user,
+    );
+    return res.json(saved);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+exports.getDeliveryPeople = async (req, res) => {
+  try {
+    const deliveryPeople = await orderService.getDeliveryPeople();
+    return res.json(deliveryPeople);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+exports.getDeliveryMetrics = async (req, res) => {
+  try {
+    const metrics = await orderService.getDeliveryMetrics();
+    return res.json(metrics);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ message: error.message });
   }
 };

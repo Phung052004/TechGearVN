@@ -63,8 +63,9 @@ function getBackendBaseUrl() {
 }
 
 function buildFrontendResultUrl({ provider, success, orderId, message } = {}) {
-  const base =
-    process.env.PAYMENT_RESULT_FE_URL || "http://localhost:5173/payment-result";
+  const base = String(
+    process.env.PAYMENT_RESULT_FE_URL || "http://localhost:5174/payment-result",
+  ).trim();
   const url = new URL(base);
   if (provider) url.searchParams.set("provider", provider);
   if (orderId) url.searchParams.set("orderId", String(orderId));
