@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { productService } from "../../services";
+import ProductImageUpload from "../../components/admin/ProductImageUpload";
 
 function getStoredUser() {
   try {
@@ -29,6 +30,7 @@ export default function ProductManage() {
   const [specs, setSpecs] = useState([{ specKey: "", specValue: "" }]);
   const [loadingSpecs, setLoadingSpecs] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("specs"); // "specs" or "images"
 
   const filteredProducts = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -262,79 +264,115 @@ export default function ProductManage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-extrabold text-gray-900">
-                  Thông số kỹ thuật
-                </div>
-                <div className="text-sm text-gray-600 line-clamp-1">
-                  {selectedProduct
-                    ? selectedProduct.name
-                    : "Chưa chọn sản phẩm"}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-2 rounded-lg border border-gray-200 font-extrabold text-sm hover:bg-gray-50 disabled:opacity-50"
-                  onClick={addRow}
-                  disabled={!selectedId || loadingSpecs}
-                >
-                  + Thêm dòng
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-2 rounded-lg bg-red-600 text-white font-extrabold text-sm hover:bg-red-700 disabled:opacity-50"
-                  onClick={handleSave}
-                  disabled={!selectedId || loadingSpecs || saving}
-                >
-                  {saving ? "Đang lưu..." : "Lưu"}
-                </button>
-              </div>
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-gray-200 mb-4">
+              <button
+                onClick={() => setActiveTab("specs")}
+                className={`px-4 py-2 font-semibold text-sm ${
+                  activeTab === "specs"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-600 hover:text-gray-700"
+                }`}
+              >
+                Thông số kỹ thuật
+              </button>
+              <button
+                onClick={() => setActiveTab("images")}
+                className={`px-4 py-2 font-semibold text-sm ${
+                  activeTab === "images"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-600 hover:text-gray-700"
+                }`}
+              >
+                Quản lý hình ảnh
+              </button>
             </div>
 
-            {loadingSpecs ? (
-              <div className="mt-4 text-gray-600">Đang tải thông số...</div>
-            ) : !selectedId ? (
-              <div className="mt-4 text-gray-600">
-                Chọn 1 sản phẩm để chỉnh sửa.
-              </div>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {specs.map((row, idx) => (
-                  <div
-                    key={idx}
-                    className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-center"
-                  >
-                    <input
-                      value={row.specKey}
-                      onChange={(e) =>
-                        updateSpecRow(idx, { specKey: e.target.value })
-                      }
-                      className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      placeholder="VD: CPU"
-                    />
-                    <input
-                      value={row.specValue}
-                      onChange={(e) =>
-                        updateSpecRow(idx, { specValue: e.target.value })
-                      }
-                      className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      placeholder="VD: Intel Core i5 12400F"
-                    />
+            {/* Specs Tab */}
+            {activeTab === "specs" && (
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-gray-900">
+                      Thông số kỹ thuật
+                    </div>
+                    <div className="text-sm text-gray-600 line-clamp-1">
+                      {selectedProduct
+                        ? selectedProduct.name
+                        : "Chưa chọn sản phẩm"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="px-3 py-2 rounded-lg border border-red-200 text-red-600 font-extrabold hover:bg-red-50"
-                      onClick={() => removeRow(idx)}
+                      className="px-3 py-2 rounded-lg border border-gray-200 font-extrabold text-sm hover:bg-gray-50 disabled:opacity-50"
+                      onClick={addRow}
+                      disabled={!selectedId || loadingSpecs}
                     >
-                      Xóa
+                      + Thêm dòng
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-2 rounded-lg bg-blue-600 text-white font-extrabold text-sm hover:bg-blue-700 disabled:opacity-50"
+                      onClick={handleSave}
+                      disabled={!selectedId || loadingSpecs || saving}
+                    >
+                      {saving ? "Đang lưu..." : "Lưu"}
                     </button>
                   </div>
-                ))}
-
-                <div className="text-xs text-gray-500">
-                  Mẹo: để trống key/value sẽ không được lưu.
                 </div>
+
+                {loadingSpecs ? (
+                  <div className="mt-4 text-gray-600">Đang tải thông số...</div>
+                ) : !selectedId ? (
+                  <div className="mt-4 text-gray-600">
+                    Chọn 1 sản phẩm để chỉnh sửa.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {specs.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-center"
+                      >
+                        <input
+                          value={row.specKey}
+                          onChange={(e) =>
+                            updateSpecRow(idx, { specKey: e.target.value })
+                          }
+                          className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          placeholder="VD: CPU"
+                        />
+                        <input
+                          value={row.specValue}
+                          onChange={(e) =>
+                            updateSpecRow(idx, { specValue: e.target.value })
+                          }
+                          className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          placeholder="VD: Intel Core i5 12400F"
+                        />
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-lg border border-red-200 text-red-600 font-extrabold hover:bg-red-50"
+                          onClick={() => removeRow(idx)}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    ))}
+
+                    <div className="text-xs text-gray-500">
+                      Mẹo: để trống key/value sẽ không được lưu.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Images Tab */}
+            {activeTab === "images" && (
+              <div>
+                <ProductImageUpload productId={selectedId} />
               </div>
             )}
           </div>

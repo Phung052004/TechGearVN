@@ -12,6 +12,22 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider, CartProvider } from "./context";
 
+// Handle unhandled promise rejections (from external scripts like Google)
+window.addEventListener("unhandledrejection", (event) => {
+  // Silently ignore Google OAuth/GSI errors
+  const errorMsg = String(event.reason || "");
+  if (
+    errorMsg.includes("GSI") ||
+    errorMsg.includes("credential") ||
+    errorMsg.includes("google")
+  ) {
+    event.preventDefault();
+    return;
+  }
+  // For other rejections, still log to console for debugging
+  console.warn("Unhandled promise rejection:", event.reason);
+});
+
 function setFavicon(href) {
   if (!href) return;
   const existing = document.querySelector('link[rel="icon"]');

@@ -27,6 +27,8 @@ export default function UsersManage() {
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
   const [filterRole, setFilterRole] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20; // rows per page
 
   const [createForm, setCreateForm] = useState({
     fullName: "",
@@ -65,6 +67,11 @@ export default function UsersManage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterRole]);
+
+  // Reset to first page when search/filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [q, filterRole]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -106,6 +113,10 @@ export default function UsersManage() {
       setSaving(false);
     }
   }
+
+  // pagination derived
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="space-y-4">
@@ -217,7 +228,7 @@ export default function UsersManage() {
             </div>
           </div>
 
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-3 overflow-x-auto max-h-[60vh] overflow-y-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
@@ -246,7 +257,7 @@ export default function UsersManage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((u) => (
+                  pageItems.map((u) => (
                     <tr key={u?._id} className="border-t">
                       <td className="px-3 py-2 font-bold">{u?.email}</td>
                       <td className="px-3 py-2">{u?.fullName}</td>
@@ -291,6 +302,37 @@ export default function UsersManage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination controls */}
+          {filtered.length > pageSize && (
+            <div className="mt-3 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Hiển thị{" "}
+                {Math.min(filtered.length, page * pageSize) -
+                  (page - 1) * pageSize}{" "}
+                / {filtered.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1 rounded border text-sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Prev
+                </button>
+                <span className="text-sm">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  className="px-3 py-1 rounded border text-sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="mt-2 text-xs text-gray-500">
             Lưu ý: user bị khóa sẽ không đăng nhập được và token cũ sẽ bị chặn.

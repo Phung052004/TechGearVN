@@ -3,8 +3,8 @@ import BannerSlider from "../../components/home/BannerSlider"; // Import Slider
 import PolicyBar from "../../components/home/PolicyBar"; // Import Policy
 import DailyDeals from "../../components/home/DailyDeals";
 import ProductCategorySection from "../../components/home/ProductCategorySection"; // <--- Import Component Mới
-import FloatingButtons from "../../components/common/FloatingButtons"; // <--- Import Component
 import CommitmentSection from "../../components/home/CommitmentSection"; // <--- Import
+import DashboardAccessCard from "../../components/home/DashboardAccessCard"; // <--- Import Dashboard Access
 
 import { categoryService } from "../../services";
 
@@ -41,6 +41,7 @@ const HomePage = () => {
   return (
     <div className="bg-gray-50 min-h-screen pb-10">
       <BannerSlider />
+      <DashboardAccessCard />
       <PolicyBar />
       <DailyDeals />
 
@@ -66,7 +67,6 @@ const HomePage = () => {
       ))}
 
       <CommitmentSection />
-      <FloatingButtons />
     </div>
   );
 };

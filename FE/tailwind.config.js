@@ -13,7 +13,8 @@ export default {
       },
       // === THÊM PHẦN NÀY ===
       animation: {
-        "glow-slow": "glow 2s ease-in-out infinite alternate", // Hiệu ứng 2s lặp lại
+        "glow-slow": "glow 2s ease-in-out infinite alternate",
+        fadeIn: "fadeIn 0.3s ease-in-out",
       },
       keyframes: {
         glow: {
@@ -24,6 +25,16 @@ export default {
           "100%": {
             boxShadow: "0 0 20px rgba(15, 82, 186, 0.8)",
             transform: "scale(1.05)",
+          },
+        },
+        fadeIn: {
+          "0%": {
+            opacity: "0",
+            transform: "scale(0.9)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "scale(1)",
           },
         },
       },

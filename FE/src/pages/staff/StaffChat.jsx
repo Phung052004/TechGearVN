@@ -19,32 +19,42 @@ export default function StaffChat() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
+  const ROOMS_POLL_MS = 5000;
+  const MESSAGES_POLL_MS = 2500;
+
   const openRooms = useMemo(
     () => rooms.filter((r) => r.status === "OPEN"),
     [rooms],
   );
 
-  async function loadRooms() {
+  async function loadRooms({ silent = false } = {}) {
     try {
-      setLoadingRooms(true);
+      if (!silent) setLoadingRooms(true);
       const res = await chatService.listRooms();
       setRooms(res || []);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Không tải được phòng chat");
+      if (!silent) {
+        toast.error(
+          err?.response?.data?.message || "Không tải được phòng chat",
+        );
+      }
     } finally {
-      setLoadingRooms(false);
+      if (!silent) setLoadingRooms(false);
     }
   }
 
-  async function loadMessages(roomId) {
+  async function loadMessages(roomId, { silent = false } = {}) {
     try {
-      setLoadingMessages(true);
+      if (!silent) setLoadingMessages(true);
       const res = await chatService.getMessages(roomId);
-      setMessages(res?.messages || []);
+      const list = Array.isArray(res) ? res : res?.messages;
+      setMessages(list || []);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Không tải được tin nhắn");
+      if (!silent) {
+        toast.error(err?.response?.data?.message || "Không tải được tin nhắn");
+      }
     } finally {
-      setLoadingMessages(false);
+      if (!silent) setLoadingMessages(false);
     }
   }
 
@@ -53,8 +63,24 @@ export default function StaffChat() {
   }, []);
 
   useEffect(() => {
+    const id = setInterval(() => {
+      loadRooms({ silent: true });
+    }, ROOMS_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
     if (!activeRoom?._id) return;
     loadMessages(activeRoom._id);
+    loadRooms({ silent: true });
+  }, [activeRoom?._id]);
+
+  useEffect(() => {
+    if (!activeRoom?._id) return;
+    const id = setInterval(() => {
+      loadMessages(activeRoom._id, { silent: true });
+    }, MESSAGES_POLL_MS);
+    return () => clearInterval(id);
   }, [activeRoom?._id]);
 
   async function send() {
@@ -132,8 +158,15 @@ export default function StaffChat() {
                   }
                   onClick={() => setActiveRoom(r)}
                 >
-                  <div className="font-extrabold text-gray-900">
-                    {r?.user?.fullName || r?.user?.email || "Khách"}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-extrabold text-gray-900 truncate">
+                      {r?.user?.fullName || r?.user?.email || "Khách"}
+                    </div>
+                    {Number(r?.unreadCount || 0) > 0 && (
+                      <span className="shrink-0 inline-flex min-w-[24px] justify-center px-2 py-0.5 rounded-full bg-rose-600 text-white text-xs font-extrabold">
+                        {r.unreadCount}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-600">
                     {formatDate(r?.updatedAt || r?.createdAt)}

@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 
 import { useAuth } from "../context";
+import DashboardHeader from "../components/layout/DashboardHeader";
 
 function classNames(...parts) {
   return parts.filter(Boolean).join(" ");
@@ -133,25 +134,10 @@ export default function AdminLayout() {
           </aside>
 
           <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xl font-extrabold text-gray-900">
-                    Khu vực quản trị
-                  </div>
-                  <div className="text-sm text-gray-600 line-clamp-1">
-                    Analytics • Users • Marketing • Settings
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="lg:hidden px-3 py-2 rounded-lg border border-gray-200 font-bold text-sm"
-                  onClick={() => navigate("/admin")}
-                >
-                  Menu
-                </button>
-              </div>
-            </div>
+            <DashboardHeader
+              title="Khu vực quản trị"
+              subtitle="Analytics • Users • Marketing • Settings"
+            />
 
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
               <Outlet />

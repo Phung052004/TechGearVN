@@ -25,6 +25,7 @@ import Cart from "./pages/user/Cart";
 import Checkout from "./pages/user/Checkout";
 import PaymentResult from "./pages/user/PaymentResult";
 import ProductManage from "./pages/admin/ProductManage";
+import WarrantyPage from "./pages/WarrantyPage";
 
 import StaffLayout from "./layouts/StaffLayout";
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -47,6 +48,7 @@ function App() {
         <Route path="checkout" element={<Checkout />} />
         <Route path="payment-result" element={<PaymentResult />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="warranty" element={<WarrantyPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<Register />} />
         <Route path="forgot-password" element={<ForgotPassword />} />

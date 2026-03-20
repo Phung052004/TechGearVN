@@ -15,6 +15,8 @@ export default function StaffReviews() {
   const [reviews, setReviews] = useState([]);
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   async function reload() {
     try {
@@ -31,6 +33,10 @@ export default function StaffReviews() {
   useEffect(() => {
     reload();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [reviews.length]);
 
   async function moderate(status) {
     if (!selected) return;
@@ -71,7 +77,7 @@ export default function StaffReviews() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
@@ -97,33 +103,75 @@ export default function StaffReviews() {
                     </td>
                   </tr>
                 ) : (
-                  reviews.map((r) => (
-                    <tr
-                      key={r._id}
-                      className="border-t hover:bg-gray-50 cursor-pointer"
-                      onClick={() => setSelected(r)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-bold text-gray-900">
-                          {r?.product?.name || "-"}
-                        </div>
-                        <div className="text-xs text-gray-600 line-clamp-1">
-                          {r?.comment || ""}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {r?.user?.fullName || r?.user?.email || "-"}
-                      </td>
-                      <td className="px-4 py-3 font-extrabold">{r?.rating}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {formatDate(r?.createdAt)}
-                      </td>
-                    </tr>
-                  ))
+                  (() => {
+                    const totalPages = Math.max(
+                      1,
+                      Math.ceil(reviews.length / pageSize),
+                    );
+                    const pageItems = reviews.slice(
+                      (page - 1) * pageSize,
+                      page * pageSize,
+                    );
+                    return pageItems.map((r) => (
+                      <tr
+                        key={r._id}
+                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        onClick={() => setSelected(r)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="font-bold text-gray-900">
+                            {r?.product?.name || "-"}
+                          </div>
+                          <div className="text-xs text-gray-600 line-clamp-1">
+                            {r?.comment || ""}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {r?.user?.fullName || r?.user?.email || "-"}
+                        </td>
+                        <td className="px-4 py-3 font-extrabold">
+                          {r?.rating}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {formatDate(r?.createdAt)}
+                        </td>
+                      </tr>
+                    ));
+                  })()
                 )}
               </tbody>
             </table>
           </div>
+          {reviews.length > pageSize && (
+            <div className="p-3 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Tổng {reviews.length} đánh giá
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1 rounded border text-sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Prev
+                </button>
+                <span className="text-sm">
+                  {page} / {Math.max(1, Math.ceil(reviews.length / pageSize))}
+                </span>
+                <button
+                  className="px-3 py-1 rounded border text-sm"
+                  onClick={() =>
+                    setPage((p) =>
+                      Math.min(Math.ceil(reviews.length / pageSize), p + 1),
+                    )
+                  }
+                  disabled={page * pageSize >= reviews.length}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">

@@ -38,7 +38,8 @@ const LoginPage = () => {
     // ADMIN: prefer admin area unless explicitly deep-linking into /admin
     if (role === "ADMIN") return nextPath.startsWith("/admin");
     // STAFF: only allow returning to staff area
-    if (role === "STAFF") return nextPath.startsWith("/staff");
+    if (role === "STAFF" || role === "DELIVERY")
+      return nextPath.startsWith("/staff");
     // CUSTOMER/others: avoid privileged areas
     if (nextPath.startsWith("/admin") || nextPath.startsWith("/staff"))
       return false;
@@ -67,6 +68,8 @@ const LoginPage = () => {
 
       if (role === "ADMIN") return navigate("/admin", { replace: true });
       if (role === "STAFF") return navigate("/staff", { replace: true });
+      if (role === "DELIVERY")
+        return navigate("/staff/orders", { replace: true });
       return navigate("/", { replace: true });
     } catch (error) {
       const message = error.response?.data?.message || "Đăng nhập thất bại";
@@ -80,62 +83,72 @@ const LoginPage = () => {
     let disposed = false;
 
     const init = async () => {
-      const gsi = await waitForGoogleGsiClient({ timeoutMs: 8000 });
-      if (disposed) return;
-      if (!gsi) return;
-      if (!googleBtnRef.current) return;
-
       try {
-        gsi.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response) => {
-            const credential = response?.credential;
-            if (!credential) {
-              toast.error("Đăng nhập Google thất bại");
-              return;
-            }
+        const gsi = await waitForGoogleGsiClient({ timeoutMs: 8000 });
+        if (disposed) return;
+        if (!gsi) return;
+        if (!googleBtnRef.current) return;
 
-            try {
-              const result = await loginWithGoogle({ credential });
-              toast.success("Đăng nhập thành công!");
-
-              const role = getRoleFromLoginResult(result);
-              const nextPath = getSafeNextPath();
-
-              if (isNextAllowedForRole(role, nextPath)) {
-                navigate(nextPath, { replace: true });
+        try {
+          gsi.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: async (response) => {
+              const credential = response?.credential;
+              if (!credential) {
+                toast.error("Đăng nhập Google thất bại");
                 return;
               }
 
-              if (role === "ADMIN")
-                return navigate("/admin", { replace: true });
-              if (role === "STAFF")
-                return navigate("/staff", { replace: true });
-              return navigate("/", { replace: true });
-            } catch (error) {
-              const message =
-                error.response?.data?.message || "Đăng nhập Google thất bại";
-              toast.error(message);
-            }
-          },
-        });
+              try {
+                const result = await loginWithGoogle({ credential });
+                toast.success("Đăng nhập thành công!");
 
-        // Clean current container in case React re-mounts.
-        googleBtnRef.current.innerHTML = "";
-        gsi.accounts.id.renderButton(googleBtnRef.current, {
-          theme: "outline",
-          size: "large",
-          text: "signin_with",
-          shape: "rectangular",
-          logo_alignment: "left",
-          width: "400",
-        });
-      } catch {
-        // noop
+                const role = getRoleFromLoginResult(result);
+                const nextPath = getSafeNextPath();
+
+                if (isNextAllowedForRole(role, nextPath)) {
+                  navigate(nextPath, { replace: true });
+                  return;
+                }
+
+                if (role === "ADMIN")
+                  return navigate("/admin", { replace: true });
+                if (role === "STAFF")
+                  return navigate("/staff", { replace: true });
+                if (role === "DELIVERY")
+                  return navigate("/staff/orders", { replace: true });
+                return navigate("/", { replace: true });
+              } catch (error) {
+                const message =
+                  error.response?.data?.message || "Đăng nhập Google thất bại";
+                toast.error(message);
+              }
+            },
+          });
+
+          // Clean current container in case React re-mounts.
+          googleBtnRef.current.innerHTML = "";
+          gsi.accounts.id.renderButton(googleBtnRef.current, {
+            theme: "outline",
+            size: "large",
+            text: "signin_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: "400",
+          });
+        } catch (renderError) {
+          // Silently ignore render errors
+          console.debug("Google button render skipped");
+        }
+      } catch (initError) {
+        // Silently catch all Google initialization errors
+        // Don't log - just skip Google button
       }
     };
 
-    init();
+    init().catch(() => {
+      // Catch any unhandled promise rejections from init
+    });
 
     return () => {
       disposed = true;

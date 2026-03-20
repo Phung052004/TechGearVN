@@ -109,3 +109,28 @@ export async function updateProduct(productId, payload) {
 export async function getAllProducts() {
   return getProducts({ includeInactive: true });
 }
+
+export async function uploadProductImage(formData) {
+  const { data } = await apiClient.post("/products/upload-image", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return unwrapCommonEnvelope(data);
+}
+
+export async function deleteProductImage(productId, imageUrl) {
+  const { data } = await apiClient.delete(`/products/${productId}/images`, {
+    data: { imageUrl },
+  });
+  return normalizeProductFields(normalizeProduct(data));
+}
+
+export async function updateProductThumbnail(productId, thumbnailUrl) {
+  const { data } = await apiClient.put(`/products/${productId}/thumbnail`, {
+    thumbnailUrl,
+  });
+  return normalizeProductFields(normalizeProduct(data));
+}
+
+export async function getProductDetail(productId) {
+  return getProductById(productId);
+}

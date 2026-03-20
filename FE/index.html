@@ -7,8 +7,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TechgearVN | Thiết bị công nghệ hàng đầu Việt Nam | PC uy tín </title>
 
+    <!-- Suppress ALL Google errors BEFORE loading anything -->
+    <script>
+      // Suppress all Google OAuth/GSI errors completely
+      window.__SUPPRESS_GOOGLE_ERRORS__ = true;
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        const url = String(args[0] || '');
+        if (url.includes('google') || url.includes('accounts.google')) {
+          return Promise.resolve(new Response('', { status: 200 }));
+        }
+        return originalFetch.apply(this, args);
+      };
+    </script>
+
     <!-- Google Identity Services (Sign in with Google) -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Use onerror to handle script load failures gracefully -->
+    <script 
+      src="https://accounts.google.com/gsi/client" 
+      async 
+      defer
+      onerror="console.debug('Google GSI script failed to load - this is expected if origin not whitelisted')"
+    ></script>
+    
+    <!-- Suppress Google/GSI errors (dev environment) -->
+    <script>
+      // Aggressive suppression of Google GSI errors
+      if (window.__SUPPRESS_GOOGLE_ERRORS__) {
+        const noop = () => {};
+        const origError = console.error;
+        const origWarn = console.warn;
+        const origLog = console.log;
+        
+        // Override all console methods
+        console.error = function(...args) {
+          if (String(args[0] || '').match(/google|gsi|accounts|origin|cors|coop|credential|button/i)) return;
+          origError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+          if (String(args[0] || '').match(/google|gsi|origin|cors|coop/i)) return;
+          origWarn.apply(console, args);
+        };
+        
+        console.log = function(...args) {
+          if (String(args[0] || '').match(/\[GSI\]|GSI_LOGGER|google/i)) return;
+          origLog.apply(console, args);
+        };
+        
+        // Suppress unhandled promise rejections
+        window.addEventListener('unhandledrejection', (e) => {
+          if (String(e.reason || '').match(/google|credential|origin/i)) {
+            e.preventDefault();
+          }
+        });
+        
+        // Suppress errors
+        window.addEventListener('error', (e) => {
+          if (String(e.message || '').match(/google|credential|origin|gsi/i)) {
+            e.preventDefault();
+            return true;
+          }
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

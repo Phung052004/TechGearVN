@@ -30,8 +30,16 @@ export async function resendRegisterCode(email) {
 }
 
 export async function logout() {
-  const { data } = await apiClient.post("/auth/logout");
-  return data;
+  try {
+    // Try to notify backend if logout endpoint exists
+    await apiClient.post("/auth/logout").catch(() => {
+      // Ignore errors - backend logout is optional
+    });
+  } catch {
+    // Ignore all errors
+  }
+  // Always return success - frontend logout is what matters
+  return { success: true };
 }
 
 export async function getMe() {

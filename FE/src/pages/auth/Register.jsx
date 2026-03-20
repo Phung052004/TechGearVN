@@ -73,53 +73,62 @@ const RegisterPage = () => {
     let disposed = false;
 
     const init = async () => {
-      const gsi = await waitForGoogleGsiClient({ timeoutMs: 8000 });
-      if (disposed) return;
-      if (!gsi) return;
-      if (!googleBtnRef.current) return;
-
       try {
-        gsi.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response) => {
-            const credential = response?.credential;
-            if (!credential) {
-              toast.error("Đăng nhập Google thất bại");
-              return;
-            }
-            try {
-              const result = await loginWithGoogle({ credential });
-              toast.success("Đăng nhập thành công!");
+        const gsi = await waitForGoogleGsiClient({ timeoutMs: 8000 });
+        if (disposed) return;
+        if (!gsi) return;
+        if (!googleBtnRef.current) return;
 
-              const role = result?.role || result?.user?.role || "";
-              if (role === "ADMIN")
-                return navigate("/admin", { replace: true });
-              if (role === "STAFF")
-                return navigate("/staff", { replace: true });
-              return navigate("/", { replace: true });
-            } catch (error) {
-              const message =
-                error.response?.data?.message || "Đăng nhập Google thất bại";
-              toast.error(message);
-            }
-          },
-        });
+        try {
+          gsi.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: async (response) => {
+              const credential = response?.credential;
+              if (!credential) {
+                toast.error("Đăng nhập Google thất bại");
+                return;
+              }
+              try {
+                const result = await loginWithGoogle({ credential });
+                toast.success("Đăng nhập thành công!");
 
-        googleBtnRef.current.innerHTML = "";
-        gsi.accounts.id.renderButton(googleBtnRef.current, {
-          theme: "outline",
-          size: "large",
-          text: "signup_with",
-          shape: "rectangular",
-          logo_alignment: "left",
-          width: "400",
-        });
-      } catch {
-        // noop
+                const role = result?.role || result?.user?.role || "";
+                if (role === "ADMIN")
+                  return navigate("/admin", { replace: true });
+                if (role === "STAFF")
+                  return navigate("/staff", { replace: true });
+                if (role === "DELIVERY")
+                  return navigate("/staff/orders", { replace: true });
+                return navigate("/", { replace: true });
+              } catch (error) {
+                const message =
+                  error.response?.data?.message || "Đăng nhập Google thất bại";
+                toast.error(message);
+              }
+            },
+          });
+
+          googleBtnRef.current.innerHTML = "";
+          gsi.accounts.id.renderButton(googleBtnRef.current, {
+            theme: "outline",
+            size: "large",
+            text: "signup_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: "400",
+          });
+        } catch (renderError) {
+          // Silently ignore render errors
+          console.debug("Google button render skipped");
+        }
+      } catch (initError) {
+        // Silently catch all Google initialization errors
       }
     };
 
-    init();
+    init().catch(() => {
+      // Catch any unhandled promise rejections
+    });
 
     return () => {
       disposed = true;

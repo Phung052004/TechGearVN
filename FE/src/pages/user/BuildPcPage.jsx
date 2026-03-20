@@ -74,7 +74,9 @@ export default function BuildPcPage() {
       setProductsByPart((prev) => ({ ...prev, [partKey]: list }));
     } catch (err) {
       setProductsError(
-        err?.response?.data?.message || err?.message || "Không tải được sản phẩm",
+        err?.response?.data?.message ||
+          err?.message ||
+          "Không tải được sản phẩm",
       );
     } finally {
       setLoadingProducts(false);
@@ -118,7 +120,9 @@ export default function BuildPcPage() {
 
       const failed = results.filter((r) => r.status === "rejected");
       if (failed.length > 0) {
-        toast.warning(`Đã thêm ${items.length - failed.length}/${items.length} sản phẩm vào giỏ hàng`);
+        toast.warning(
+          `Đã thêm ${items.length - failed.length}/${items.length} sản phẩm vào giỏ hàng`,
+        );
       } else {
         toast.success("Đã thêm cấu hình vào giỏ hàng");
       }
@@ -126,7 +130,9 @@ export default function BuildPcPage() {
       navigate("/cart");
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || err?.message || "Không thêm vào giỏ được",
+        err?.response?.data?.message ||
+          err?.message ||
+          "Không thêm vào giỏ được",
       );
     }
   }
@@ -155,7 +161,9 @@ export default function BuildPcPage() {
       toast.success("Đã lưu cấu hình");
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || err?.message || "Không lưu được cấu hình",
+        err?.response?.data?.message ||
+          err?.message ||
+          "Không lưu được cấu hình",
       );
     }
   }
@@ -171,7 +179,9 @@ export default function BuildPcPage() {
     ];
 
     const csv = rows
-      .map((r) => r.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
+      .map((r) =>
+        r.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","),
+      )
       .join("\n");
 
     // Add BOM so Excel opens Vietnamese correctly
@@ -224,7 +234,8 @@ export default function BuildPcPage() {
 
               <div className="text-right">
                 <div className="text-gray-900 font-extrabold">
-                  Chi phí dự tính: <span className="text-red-600">{formatVnd(total)}</span>
+                  Chi phí dự tính:{" "}
+                  <span className="text-red-600">{formatVnd(total)}</span>
                 </div>
                 <div className="text-xs text-gray-500">
                   Đã chọn {pickedCount}/{PARTS.length} linh kiện

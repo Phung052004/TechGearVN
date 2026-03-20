@@ -10,7 +10,7 @@ import {
 import { toast } from "react-toastify";
 import { getMe, updateMyProfile } from "../../services/authService";
 import Modal from "../../components/common/Modal";
-import { orderService } from "../../services";
+import { orderService, warrantyService } from "../../services";
 
 function formatVnd(price) {
   return new Intl.NumberFormat("vi-VN", {
@@ -124,6 +124,17 @@ export default function Profile() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [warrantyModalOpen, setWarrantyModalOpen] = useState(false);
+  const [selectedOrderForWarranty, setSelectedOrderForWarranty] =
+    useState(null);
+  const [warrantyForm, setWarrantyForm] = useState({
+    orderItemId: "",
+    productSerialNumber: "",
+    reason: "",
+    description: "",
+    imageProof: [],
+  });
+  const [creatingWarranty, setCreatingWarranty] = useState(false);
 
   const [profileForm, setProfileForm] = useState({
     fullName: "",
@@ -236,6 +247,54 @@ export default function Profile() {
       toast.error("Không thể tải danh sách đơn hàng");
     } finally {
       setOrdersLoading(false);
+    }
+  };
+
+  const openWarrantyForm = (order) => {
+    setSelectedOrderForWarranty(order);
+    setWarrantyModalOpen(true);
+    setWarrantyForm({
+      orderItemId: "",
+      productSerialNumber: "",
+      reason: "",
+      description: "",
+      imageProof: [],
+    });
+  };
+
+  const handleWarrantyFormChange = (e) => {
+    const { name, value } = e.target;
+    setWarrantyForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleWarrantySubmit = async (e) => {
+    e.preventDefault();
+
+    if (!warrantyForm.orderItemId || !warrantyForm.reason) {
+      toast.error("Vui lòng chọn sản phẩm và lý do");
+      return;
+    }
+
+    try {
+      setCreatingWarranty(true);
+      await warrantyService.createClaim({
+        ...warrantyForm,
+        orderId: selectedOrderForWarranty._id,
+      });
+      toast.success("Tạo yêu cầu bảo hành thành công!");
+      setWarrantyModalOpen(false);
+      setSelectedOrderForWarranty(null);
+      setWarrantyForm({
+        orderItemId: "",
+        productSerialNumber: "",
+        reason: "",
+        description: "",
+        imageProof: [],
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi tạo yêu cầu bảo hành");
+    } finally {
+      setCreatingWarranty(false);
     }
   };
 
@@ -610,6 +669,13 @@ export default function Profile() {
                         <div className="pt-2 flex justify-end gap-3">
                           <button
                             type="button"
+                            onClick={() => openWarrantyForm(selectedOrder)}
+                            className="px-4 py-2 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 font-bold text-red-600"
+                          >
+                            Yêu cầu bảo hành
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setSelectedOrder(null)}
                             className="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-bold text-gray-800"
                           >
@@ -783,6 +849,157 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Warranty Form Modal */}
+      {warrantyModalOpen && selectedOrderForWarranty && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Yêu cầu bảo hành sản phẩm
+                </h2>
+                <button
+                  onClick={() => {
+                    setWarrantyModalOpen(false);
+                    setSelectedOrderForWarranty(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleWarrantySubmit} className="p-6 space-y-4">
+              {/* Select Product */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Chọn sản phẩm <span className="text-red-600">*</span>
+                </label>
+                <select
+                  name="orderItemId"
+                  value={warrantyForm.orderItemId}
+                  onChange={handleWarrantyFormChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-red-400 focus:outline-none"
+                >
+                  <option value="">-- Chọn sản phẩm --</option>
+                  {(selectedOrderForWarranty?.items || []).map((item, idx) => (
+                    <option key={idx} value={item?.product || `item-${idx}`}>
+                      {item?.productName} (SL: {item?.quantity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Lý do yêu cầu <span className="text-red-600">*</span>
+                </label>
+                <select
+                  name="reason"
+                  value={warrantyForm.reason}
+                  onChange={handleWarrantyFormChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-red-400 focus:outline-none"
+                >
+                  <option value="">-- Chọn lý do --</option>
+                  <option value="BROKEN">Sản phẩm bị vỡ/hỏng</option>
+                  <option value="DEFECTIVE">Sản phẩm lỗi kỹ thuật</option>
+                  <option value="NOT_WORKING">Sản phẩm không hoạt động</option>
+                  <option value="PHYSICAL_DAMAGE">Hư hỏng vật lý</option>
+                  <option value="OTHER">Lý do khác</option>
+                </select>
+              </div>
+
+              {/* Serial Number */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Số seri sản phẩm (nếu có)
+                </label>
+                <input
+                  type="text"
+                  name="productSerialNumber"
+                  value={warrantyForm.productSerialNumber}
+                  onChange={handleWarrantyFormChange}
+                  placeholder="Ví dụ: ABC123XYZ"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-red-400 focus:outline-none"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Mô tả chi tiết vấn đề
+                </label>
+                <textarea
+                  name="description"
+                  value={warrantyForm.description}
+                  onChange={handleWarrantyFormChange}
+                  placeholder="Vui lòng mô tả chi tiết vấn đề gặp phải..."
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-red-400 focus:outline-none resize-none"
+                />
+              </div>
+
+              {/* Images */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Hình ảnh chứng minh
+                </label>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center bg-gray-50">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setWarrantyForm((prev) => ({
+                        ...prev,
+                        imageProof: files.map((f) => f.name),
+                      }));
+                      toast.success(`Đã thêm ${files.length} ảnh`);
+                    }}
+                    className="hidden"
+                    id="images-input"
+                  />
+                  <label htmlFor="images-input" className="cursor-pointer">
+                    <div className="text-gray-600">
+                      Kéo thả hoặc click để chọn ảnh
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {warrantyForm.imageProof.length > 0
+                        ? `${warrantyForm.imageProof.length} ảnh được chọn`
+                        : "Chưa có ảnh"}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWarrantyModalOpen(false);
+                    setSelectedOrderForWarranty(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-bold text-gray-800"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingWarranty}
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-bold"
+                >
+                  {creatingWarranty ? "Đang gửi..." : "Gửi yêu cầu"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Logout confirm modal */}
       {openLogout && (

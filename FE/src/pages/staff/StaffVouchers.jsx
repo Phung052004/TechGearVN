@@ -23,6 +23,8 @@ export default function StaffVouchers() {
   const [loading, setLoading] = useState(true);
   const [vouchers, setVouchers] = useState([]);
   const [activeOnly, setActiveOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   const [selectedId, setSelectedId] = useState("");
   const selectedVoucher = useMemo(() => {
@@ -58,6 +60,10 @@ export default function StaffVouchers() {
     if (!activeOnly) return list;
     return list.filter((v) => v.status === "ACTIVE");
   }, [vouchers, activeOnly]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeOnly, vouchers.length]);
 
   async function reload() {
     try {
@@ -271,7 +277,7 @@ export default function StaffVouchers() {
           </label>
         </div>
 
-        <div className="mt-4 overflow-auto border border-gray-100 rounded-xl">
+        <div className="mt-4 overflow-auto border border-gray-100 rounded-xl max-h-[60vh]">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -310,82 +316,124 @@ export default function StaffVouchers() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((v) => (
-                  <tr
-                    key={v._id}
-                    className={
-                      "border-t border-gray-100 cursor-pointer " +
-                      (selectedId === v._id ? "bg-blue-50" : "hover:bg-gray-50")
-                    }
-                    onClick={() => setSelectedId(v._id)}
-                    title="Bấm để chỉnh sửa"
-                  >
-                    <td className="px-3 py-3 font-extrabold text-gray-900">
-                      {v.code}
-                    </td>
-                    <td className="px-3 py-3 font-bold text-gray-700">
-                      {v.discountType}
-                    </td>
-                    <td className="px-3 py-3 text-right font-extrabold">
-                      {v.discountType === "PERCENT"
-                        ? `${v.discountValue}%`
-                        : v.discountValue}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={
-                          v.status === "INACTIVE"
-                            ? "text-rose-700 font-extrabold"
-                            : "text-emerald-700 font-extrabold"
-                        }
-                      >
-                        {v.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-right font-bold text-gray-700">
-                      {v.usedCount ?? 0}
-                      {v.usageLimit ? ` / ${v.usageLimit}` : ""}
-                    </td>
-                    <td className="px-3 py-3 text-gray-700">
-                      <div className="text-xs">
-                        Start: {formatDate(v.startDate)}
-                      </div>
-                      <div className="text-xs">
-                        End: {formatDate(v.endDate)}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <button
-                        type="button"
-                        className={
-                          v.status === "ACTIVE"
-                            ? "px-3 py-2 rounded-lg border border-amber-200 text-amber-800 font-bold text-xs mr-2"
-                            : "px-3 py-2 rounded-lg border border-emerald-200 text-emerald-800 font-bold text-xs mr-2"
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleStatus(v);
-                        }}
-                      >
-                        {v.status === "ACTIVE" ? "Disable" : "Enable"}
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-2 rounded-lg border border-rose-200 text-rose-700 font-bold text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(v._id);
-                        }}
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                (() => {
+                  const totalPages = Math.max(
+                    1,
+                    Math.ceil(filtered.length / pageSize),
+                  );
+                  const pageItems = filtered.slice(
+                    (page - 1) * pageSize,
+                    page * pageSize,
+                  );
+                  return pageItems.map((v) => (
+                    <tr
+                      key={v._id}
+                      className={
+                        "border-t border-gray-100 cursor-pointer " +
+                        (selectedId === v._id
+                          ? "bg-blue-50"
+                          : "hover:bg-gray-50")
+                      }
+                      onClick={() => setSelectedId(v._id)}
+                      title="Bấm để chỉnh sửa"
+                    >
+                      <td className="px-3 py-3 font-extrabold text-gray-900">
+                        {v.code}
+                      </td>
+                      <td className="px-3 py-3 font-bold text-gray-700">
+                        {v.discountType}
+                      </td>
+                      <td className="px-3 py-3 text-right font-extrabold">
+                        {v.discountType === "PERCENT"
+                          ? `${v.discountValue}%`
+                          : v.discountValue}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={
+                            v.status === "INACTIVE"
+                              ? "text-rose-700 font-extrabold"
+                              : "text-emerald-700 font-extrabold"
+                          }
+                        >
+                          {v.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right font-bold text-gray-700">
+                        {v.usedCount ?? 0}
+                        {v.usageLimit ? ` / ${v.usageLimit}` : ""}
+                      </td>
+                      <td className="px-3 py-3 text-gray-700">
+                        <div className="text-xs">
+                          Start: {formatDate(v.startDate)}
+                        </div>
+                        <div className="text-xs">
+                          End: {formatDate(v.endDate)}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <button
+                          type="button"
+                          className={
+                            v.status === "ACTIVE"
+                              ? "px-3 py-2 rounded-lg border border-amber-200 text-amber-800 font-bold text-xs mr-2"
+                              : "px-3 py-2 rounded-lg border border-emerald-200 text-emerald-800 font-bold text-xs mr-2"
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleStatus(v);
+                          }}
+                        >
+                          {v.status === "ACTIVE" ? "Disable" : "Enable"}
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-lg border border-rose-200 text-rose-700 font-bold text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(v._id);
+                          }}
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  ));
+                })()
               )}
             </tbody>
           </table>
         </div>
+        {filtered.length > pageSize && (
+          <div className="p-3 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Tổng {filtered.length} voucher
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 rounded border text-sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Prev
+              </button>
+              <span className="text-sm">
+                {page} / {Math.max(1, Math.ceil(filtered.length / pageSize))}
+              </span>
+              <button
+                className="px-3 py-1 rounded border text-sm"
+                onClick={() =>
+                  setPage((p) =>
+                    Math.min(Math.ceil(filtered.length / pageSize), p + 1),
+                  )
+                }
+                disabled={page * pageSize >= filtered.length}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-5">

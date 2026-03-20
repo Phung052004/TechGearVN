@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "react-toastify";
+import { IoClose, IoImage } from "react-icons/io5";
 
 import {
   productService,
@@ -47,6 +48,8 @@ export default function StaffProducts() {
 
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   const [productForm, setProductForm] = useState({
     name: "",
@@ -70,6 +73,12 @@ export default function StaffProducts() {
   const [specsLoading, setSpecsLoading] = useState(false);
   const [specsSaving, setSpecsSaving] = useState(false);
   const [specs, setSpecs] = useState([]);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageLibrary, setImageLibrary] = useState([]);
+  const [showImageLibrary, setShowImageLibrary] = useState(false);
+  const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
 
   const [receipt, setReceipt] = useState({
     supplierId: "",
@@ -110,9 +119,54 @@ export default function StaffProducts() {
     }
   }
 
+  async function handleImageSelect(e, isEdit = false) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploaded = await productService.uploadProductImage(formData);
+      const imageUrl = uploaded?.url || uploaded;
+
+      if (isEdit) {
+        setEditForm((s) => ({ ...s, image: imageUrl }));
+      } else {
+        setProductForm((s) => ({ ...s, image: imageUrl }));
+      }
+
+      // Add to library
+      setImageLibrary((prev) => [imageUrl, ...prev]);
+      toast.success("Đã upload ảnh");
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || err?.message || "Lỗi upload ảnh",
+      );
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
+  }
+
+  function selectFromLibrary(imageUrl, isEdit = false) {
+    if (isEdit) {
+      setEditForm((s) => ({ ...s, image: imageUrl }));
+    } else {
+      setProductForm((s) => ({ ...s, image: imageUrl }));
+    }
+    setShowImageLibrary(false);
+  }
+
   useEffect(() => {
     reloadAll();
   }, []);
+
+  // Reset page when query changes
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   useEffect(() => {
     if (!selectedProduct) return;
@@ -385,7 +439,7 @@ export default function StaffProducts() {
               />
             </div>
 
-            <div className="mt-3 overflow-x-auto">
+            <div className="mt-3 overflow-x-auto max-h-[60vh] overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
@@ -411,38 +465,75 @@ export default function StaffProducts() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((p) => (
-                      <tr
-                        key={p._id}
-                        className="border-t hover:bg-gray-50 cursor-pointer"
-                        onClick={() => setSelectedId(p._id)}
-                      >
-                        <td className="px-3 py-3 font-bold text-gray-900">
-                          {p.name}
-                        </td>
-                        <td className="px-3 py-3 text-right font-extrabold">
-                          {formatMoney(p.price)}
-                        </td>
-                        <td className="px-3 py-3 text-right font-bold">
-                          {p.stockQuantity ?? "-"}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className={
-                              p.status === "INACTIVE"
-                                ? "text-rose-700 font-extrabold"
-                                : "text-emerald-700 font-extrabold"
-                            }
-                          >
-                            {p.status || "ACTIVE"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+                    // Paginate filtered products
+                    (() => {
+                      const totalPages = Math.max(
+                        1,
+                        Math.ceil(filtered.length / pageSize),
+                      );
+                      const pageItems = filtered.slice(
+                        (page - 1) * pageSize,
+                        page * pageSize,
+                      );
+                      return pageItems.map((p) => (
+                        <tr
+                          key={p._id}
+                          className="border-t hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setSelectedId(p._id)}
+                        >
+                          <td className="px-3 py-3 font-bold text-gray-900">
+                            {p.name}
+                          </td>
+                          <td className="px-3 py-3 text-right font-extrabold">
+                            {formatMoney(p.price)}
+                          </td>
+                          <td className="px-3 py-3 text-right font-bold">
+                            {p.stockQuantity ?? "-"}
+                          </td>
+                          <td className="px-3 py-3">
+                            <span
+                              className={
+                                p.status === "INACTIVE"
+                                  ? "text-rose-700 font-extrabold"
+                                  : "text-emerald-700 font-extrabold"
+                              }
+                            >
+                              {p.status || "ACTIVE"}
+                            </span>
+                          </td>
+                        </tr>
+                      ));
+                    })()
                   )}
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination controls for products */}
+            {filtered.length > pageSize && (
+              <div className="mt-3 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Tổng {filtered.length} sản phẩm
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-3 py-1 rounded border text-sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Prev
+                  </button>
+                  <span className="text-sm">{page}</span>
+                  <button
+                    className="px-3 py-1 rounded border text-sm"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page * pageSize >= filtered.length}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-4">
@@ -476,14 +567,73 @@ export default function StaffProducts() {
                     setProductForm((s) => ({ ...s, price: e.target.value }))
                   }
                 />
-                <input
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
-                  placeholder="Image URL"
-                  value={productForm.image}
-                  onChange={(e) =>
-                    setProductForm((s) => ({ ...s, image: e.target.value }))
-                  }
-                />
+
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-gray-600">
+                    Hình ảnh
+                  </div>
+                  {productForm.image && (
+                    <img
+                      src={productForm.image}
+                      alt="Preview"
+                      className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={(e) => handleImageSelect(e, false)}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="flex-1 px-2 py-2 rounded-lg border border-gray-200 text-xs font-bold hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {uploadingImage ? "Đang upload..." : "📤 Chọn file"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowImageLibrary(!showImageLibrary)}
+                      className="flex-1 px-2 py-2 rounded-lg border border-blue-200 text-xs font-bold text-blue-600 hover:bg-blue-50"
+                    >
+                      📸 Thư viện
+                    </button>
+                  </div>
+                  <input
+                    className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                    placeholder="Hoặc nhập URL"
+                    value={productForm.image}
+                    onChange={(e) =>
+                      setProductForm((s) => ({ ...s, image: e.target.value }))
+                    }
+                  />
+
+                  {/* Image Library */}
+                  {showImageLibrary && imageLibrary.length > 0 && (
+                    <div className="border border-gray-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                      <div className="text-xs font-semibold text-gray-600 mb-2">
+                        Danh sách ảnh
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {imageLibrary.map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt={`Lib ${idx}`}
+                            onClick={() => selectFromLibrary(img, false)}
+                            className="w-full h-16 object-cover rounded cursor-pointer hover:opacity-75 border-2 border-transparent hover:border-blue-400"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <select
                   className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
                   value={productForm.categoryId}
@@ -558,14 +708,73 @@ export default function StaffProducts() {
                       setEditForm((s) => ({ ...s, price: e.target.value }))
                     }
                   />
-                  <input
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
-                    placeholder="Image URL"
-                    value={editForm.image}
-                    onChange={(e) =>
-                      setEditForm((s) => ({ ...s, image: e.target.value }))
-                    }
-                  />
+
+                  {/* Image Upload Section - Edit */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-gray-600">
+                      Hình ảnh
+                    </div>
+                    {editForm.image && (
+                      <img
+                        src={editForm.image}
+                        alt="Preview"
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="file"
+                        ref={editFileInputRef}
+                        onChange={(e) => handleImageSelect(e, true)}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="flex-1 px-2 py-2 rounded-lg border border-gray-200 text-xs font-bold hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {uploadingImage ? "Đang upload..." : "📤 Chọn file"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowImageLibrary(!showImageLibrary)}
+                        className="flex-1 px-2 py-2 rounded-lg border border-blue-200 text-xs font-bold text-blue-600 hover:bg-blue-50"
+                      >
+                        📸 Thư viện
+                      </button>
+                    </div>
+                    <input
+                      className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                      placeholder="Hoặc nhập URL"
+                      value={editForm.image}
+                      onChange={(e) =>
+                        setEditForm((s) => ({ ...s, image: e.target.value }))
+                      }
+                    />
+
+                    {/* Image Library */}
+                    {showImageLibrary && imageLibrary.length > 0 && (
+                      <div className="border border-gray-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                        <div className="text-xs font-semibold text-gray-600 mb-2">
+                          Danh sách ảnh
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {imageLibrary.map((img, idx) => (
+                            <img
+                              key={idx}
+                              src={img}
+                              alt={`Lib ${idx}`}
+                              onClick={() => selectFromLibrary(img, true)}
+                              className="w-full h-16 object-cover rounded cursor-pointer hover:opacity-75 border-2 border-transparent hover:border-blue-400"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <select
                     className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
                     value={editForm.categoryId}

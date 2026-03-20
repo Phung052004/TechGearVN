@@ -3,6 +3,8 @@ import { Outlet } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import HeaderMain from "../components/layout/HeaderMain";
 import Footer from "../components/layout/Footer";
+import ChatBubble from "../components/chat/ChatBubble";
+
 const MainLayout = () => {
   return (
     <div className="flex flex-col min-h-screen">
@@ -19,6 +21,9 @@ const MainLayout = () => {
       </main>
 
       <Footer />
+
+      {/* Chat Bubble Widget */}
+      <ChatBubble />
     </div>
   );
 };

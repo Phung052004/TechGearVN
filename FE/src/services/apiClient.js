@@ -22,6 +22,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
+  // Add auth token
   const token = localStorage.getItem("token");
   if (token) {
     config.headers = config.headers ?? {};
@@ -29,6 +30,14 @@ apiClient.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
+
+  // Don't set Content-Type for FormData - let axios/browser handle it
+  if (!(config.data instanceof FormData)) {
+    if (!config.headers.get?.("Content-Type")) {
+      config.headers["Content-Type"] = "application/json";
+    }
+  }
+
   return config;
 });
 

@@ -131,65 +131,208 @@ export default function StaffWarranty() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((c) => (
-                    <tr
-                      key={c._id}
-                      className="border-t hover:bg-gray-50 cursor-pointer"
-                      onClick={() => setSelected(c)}
-                    >
-                      <td className="px-4 py-3 font-bold text-gray-900">
-                        {String(c._id).slice(-6).toUpperCase()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-bold text-gray-900">
-                          {c?.orderItemId || "-"}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {c?.user?.fullName || c?.user?.email || ""}
-                        </div>
-                        <div className="text-xs text-gray-600 line-clamp-1">
-                          {c?.reason || ""}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 font-extrabold">{c.status}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {formatDate(c.createdAt)}
-                      </td>
-                    </tr>
-                  ))
+                  filtered.map((c) => {
+                    const product = c?.order?.items?.find(
+                      (it) =>
+                        it?.product === c?.orderItemId ||
+                        it?.productName === c?.orderItemId,
+                    );
+                    return (
+                      <tr
+                        key={c._id}
+                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        onClick={() => setSelected(c)}
+                      >
+                        <td className="px-4 py-3 font-bold text-gray-900">
+                          {String(c._id).slice(-6).toUpperCase()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-bold text-gray-900 line-clamp-1">
+                            {product?.productName || c?.orderItemId || "-"}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {c?.user?.fullName || c?.user?.email || ""}
+                          </div>
+                          <div className="text-xs text-gray-600 line-clamp-1">
+                            {c?.reason}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 font-extrabold">{c.status}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {formatDate(c.createdAt)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <div className="font-extrabold text-gray-900">Cập nhật</div>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 max-h-[80vh] overflow-y-auto">
+          <div className="font-extrabold text-gray-900">Chi tiết yêu cầu</div>
           {!selected ? (
             <div className="text-sm text-gray-600 mt-2">Chọn 1 yêu cầu.</div>
           ) : (
-            <div className="mt-3 space-y-3">
-              <div className="text-sm">
-                <div className="text-gray-600">Order item id</div>
-                <div className="font-extrabold text-gray-900 break-all">
-                  {selected.orderItemId}
+            <div className="mt-3 space-y-4">
+              {/* Thông tin người dùng */}
+              <div className="pb-3 border-b border-gray-200">
+                <div className="text-sm font-bold text-gray-700 mb-2">
+                  Thông tin khách hàng
+                </div>
+                <div className="text-xs space-y-1">
+                  <div>
+                    <span className="text-gray-600">Tên:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.user?.fullName || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Email:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.user?.email || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Điện thoại:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.user?.phone || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Địa chỉ:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.user?.address || "-"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="text-sm">
-                <div className="text-gray-600">Serial (nếu có)</div>
-                <div className="font-bold text-gray-900 break-all">
-                  {selected.productSerialNumber || "-"}
+              {/* Thông tin sản phẩm */}
+              <div className="pb-3 border-b border-gray-200">
+                <div className="text-sm font-bold text-gray-700 mb-2">
+                  Thông tin sản phẩm
+                </div>
+                {(() => {
+                  const orderId = selected?.order?._id;
+                  const product = selected?.order?.items?.find(
+                    (it) =>
+                      it?.product === selected?.orderItemId ||
+                      it?.productName === selected?.orderItemId,
+                  );
+                  return (
+                    <div className="text-xs space-y-1">
+                      <div>
+                        <span className="text-gray-600">Tên sản phẩm:</span>
+                        <span className="font-bold text-gray-900">
+                          {" "}
+                          {product?.productName || selected?.orderItemId || "-"}
+                        </span>
+                      </div>
+                      {product ? (
+                        <>
+                          <div>
+                            <span className="text-gray-600">Số lượng:</span>
+                            <span className="font-bold text-gray-900">
+                              {" "}
+                              {product?.quantity || "-"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Giá:</span>
+                            <span className="font-bold text-gray-900">
+                              {" "}
+                              {product?.price?.toLocaleString("vi-VN")} ₫
+                            </span>
+                          </div>
+                        </>
+                      ) : null}
+                      <div>
+                        <span className="text-gray-600">Số seri:</span>
+                        <span className="font-bold text-gray-900">
+                          {" "}
+                          {selected?.productSerialNumber || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Lý do yêu cầu */}
+              <div className="pb-3 border-b border-gray-200">
+                <div className="text-xs text-gray-600 font-bold">
+                  Lý do yêu cầu
+                </div>
+                <div className="font-bold text-gray-900 text-xs mt-1">
+                  {selected?.reason}
+                </div>
+                {selected?.description && (
+                  <div className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">
+                    {selected?.description}
+                  </div>
+                )}
+              </div>
+
+              {/* Hình ảnh chứng minh */}
+              {selected?.imageProof && selected?.imageProof?.length > 0 && (
+                <div className="pb-3 border-b border-gray-200">
+                  <div className="text-xs text-gray-600 font-bold mb-2">
+                    Hình ảnh chứng minh ({selected?.imageProof?.length})
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selected?.imageProof?.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700"
+                      >
+                        {typeof img === "string"
+                          ? img.split("/").pop()
+                          : `Ảnh ${idx + 1}`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Thông tin đơn hàng */}
+              <div className="pb-3 border-b border-gray-200">
+                <div className="text-xs text-gray-600 font-bold">
+                  Thông tin đơn hàng
+                </div>
+                <div className="text-xs space-y-1 mt-1">
+                  <div>
+                    <span className="text-gray-600">Mã đơn:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.order?.orderNumber ||
+                        String(selected?.order?._id).slice(-6) ||
+                        "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Năm đơn:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.order?.totalAmount?.toLocaleString("vi-VN")} ₫
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Địa chỉ giao:</span>
+                    <span className="font-bold text-gray-900">
+                      {" "}
+                      {selected?.order?.shippingAddress || "-"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="text-sm">
-                <div className="text-gray-600">Lý do</div>
-                <div className="font-bold text-gray-900 whitespace-pre-wrap mt-1">
-                  {selected.reason}
-                </div>
-              </div>
-
+              {/* Trạng thái */}
               <div>
                 <div className="text-sm font-bold text-gray-700">
                   Trạng thái
@@ -210,9 +353,10 @@ export default function StaffWarranty() {
                 </select>
               </div>
 
+              {/* Resolution */}
               <div>
                 <div className="text-sm font-bold text-gray-700">
-                  Resolution
+                  Giải pháp xử lý
                 </div>
                 <select
                   className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
@@ -226,11 +370,13 @@ export default function StaffWarranty() {
                   disabled={saving}
                 >
                   <option value="">-- Chọn --</option>
-                  <option value="REPAIR">REPAIR</option>
-                  <option value="REPLACE">REPLACE</option>
-                  <option value="REFUND">REFUND</option>
+                  <option value="REPAIR">Sửa chữa</option>
+                  <option value="REPLACE">Thay thế</option>
+                  <option value="REFUND">Hoàn tiền</option>
                 </select>
               </div>
+
+              {/* Ghi chú nhân viên */}
               <div>
                 <div className="text-sm font-bold text-gray-700">
                   Ghi chú nhân viên
@@ -243,29 +389,18 @@ export default function StaffWarranty() {
                     setSelected((s) => ({ ...s, staffNote: e.target.value }))
                   }
                   disabled={saving}
+                  placeholder="Nhập ghi chú cho khách hàng..."
                 />
               </div>
-              <div>
-                <div className="text-sm font-bold text-gray-700">
-                  Kết quả xử lý
-                </div>
-                <textarea
-                  rows={3}
-                  className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
-                  value={selected.resolution || ""}
-                  onChange={(e) =>
-                    setSelected((s) => ({ ...s, resolution: e.target.value }))
-                  }
-                  disabled={saving}
-                />
-              </div>
+
+              {/* Lưu */}
               <button
                 type="button"
-                className="w-full px-3 py-2 rounded-lg bg-blue-600 text-white font-bold text-sm"
+                className="w-full px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm"
                 onClick={saveUpdate}
                 disabled={saving}
               >
-                Lưu
+                {saving ? "Đang lưu..." : "Lưu thay đổi"}
               </button>
             </div>
           )}
