@@ -1,7 +1,7 @@
 const authService = require("../services/authService");
 
 // --- ĐĂNG KÝ (BƯỚC 1): GỬI MÃ OTP QUA EMAIL ---
-// POST /api/auth/register
+// POST /api/auth/registe 
 exports.registerUser = async (req, res) => {
   try {
     const result = await authService.startRegister(req.body);
