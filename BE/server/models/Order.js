@@ -62,7 +62,7 @@ const orderSchema = new mongoose.Schema(
 
     items: { type: [orderItemSchema], required: true },
 
-    // PayOS mapping fields (needed because PayOS orderCode is numeric)
+    // PayOS mapping fields (needed because PayOS orderCode is numeric).
     payosOrderCode: { type: Number, index: true },
     payosPaymentLinkId: { type: String, trim: true },
 
