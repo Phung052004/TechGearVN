@@ -11,6 +11,8 @@ const {
   payosReturn,
   payosCancel,
   payosWebhook,
+  getOrderPayments,
+  getPaymentDetails,
 } = require("../controllers/paymentController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -25,6 +27,10 @@ router.get("/vnpay/return", vnpayReturn);
 router.get("/momo/return", momoReturn);
 router.get("/payos/return", payosReturn);
 router.get("/payos/cancel", payosCancel);
+
+// Payment info API (authenticated)
+router.get("/orders/:orderId/payments", protect, getOrderPayments);
+router.get("/:paymentId", protect, getPaymentDetails);
 
 // PayOS server-to-server webhook
 router.post("/payos/webhook", payosWebhook);

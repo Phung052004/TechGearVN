@@ -36,6 +36,14 @@ async function createReview(userId, payload = {}) {
   const productDoc = await Product.findById(product).select("_id");
   if (!productDoc) throw createHttpError(404, "Không tìm thấy sản phẩm");
 
+  const existing = await Review.findOne({
+    user: userId,
+    product,
+  }).select("_id");
+  if (existing) {
+    throw createHttpError(400, "Bạn chỉ được đánh giá sản phẩm này 1 lần");
+  }
+
   return Review.create({
     user: userId,
     product,
@@ -46,7 +54,7 @@ async function createReview(userId, payload = {}) {
   });
 }
 
-async function getReviewsForProduct(productIdOrSlug) {
+async function getReviewsForProduct(productIdOrSlug, currentUserId = null) {
   const value = String(productIdOrSlug ?? "").trim();
 
   const productFilter = mongoose.Types.ObjectId.isValid(value)
@@ -56,7 +64,14 @@ async function getReviewsForProduct(productIdOrSlug) {
   const product = await Product.findOne(productFilter).select("_id");
   if (!product) return [];
 
-  return Review.find({ product: product._id, status: "APPROVED" })
+  const filter = { product: product._id };
+  if (currentUserId) {
+    filter.$or = [{ status: "APPROVED" }, { user: currentUserId }];
+  } else {
+    filter.status = "APPROVED";
+  }
+
+  return Review.find(filter)
     .populate("user", "fullName")
     .sort({ createdAt: -1 });
 }
@@ -78,9 +93,60 @@ async function moderateReview(id, { status, reply } = {}) {
   return review.save();
 }
 
+async function getMyReviewsForOrder(userId, orderId) {
+  if (!mongoose.Types.ObjectId.isValid(String(orderId))) {
+    throw createHttpError(400, "orderId không hợp lệ");
+  }
+
+  const order = await Order.findById(orderId).select("_id user");
+  if (!order) {
+    throw createHttpError(404, "Không tìm thấy đơn hàng");
+  }
+  if (String(order.user) !== String(userId)) {
+    throw createHttpError(403, "Không có quyền truy cập đơn hàng này");
+  }
+
+  return Review.find({ user: userId, order: orderId })
+    .populate("product", "name slug image")
+    .sort({ createdAt: -1 });
+}
+
+async function updateMyReview(userId, reviewId, payload = {}) {
+  const { rating, comment, images } = payload;
+  const review = await Review.findById(reviewId);
+  if (!review) throw createHttpError(404, "Không tìm thấy review");
+
+  if (String(review.user) !== String(userId)) {
+    throw createHttpError(403, "Không có quyền sửa review này");
+  }
+
+  if (rating !== undefined) review.rating = rating;
+  if (comment !== undefined) review.comment = comment;
+  if (images !== undefined) review.images = Array.isArray(images) ? images : [];
+
+  review.status = "PENDING";
+  review.reply = "";
+  return review.save();
+}
+
+async function deleteMyReview(userId, reviewId) {
+  const review = await Review.findById(reviewId);
+  if (!review) throw createHttpError(404, "Không tìm thấy review");
+
+  if (String(review.user) !== String(userId)) {
+    throw createHttpError(403, "Không có quyền xóa review này");
+  }
+
+  await review.deleteOne();
+  return { message: "Đã xóa review" };
+}
+
 module.exports = {
   createReview,
   getReviewsForProduct,
   getPendingReviews,
   moderateReview,
+  getMyReviewsForOrder,
+  updateMyReview,
+  deleteMyReview,
 };

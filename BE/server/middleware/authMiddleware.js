@@ -39,4 +39,25 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+const optionalProtect = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password");
+    if (user && !user.isBlocked) {
+      req.user = user;
+    }
+
+    return next();
+  } catch {
+    return next();
+  }
+};
+
+module.exports = { protect, authorize, optionalProtect };

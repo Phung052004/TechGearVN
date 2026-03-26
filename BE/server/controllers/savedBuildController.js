@@ -30,6 +30,17 @@ exports.getBuildByIdOrShare = async (req, res) => {
   }
 };
 
+exports.getBuildByShareLink = async (req, res) => {
+  try {
+    const build = await savedBuildService.getBuildByShareLink(
+      req.params.shareLink,
+    );
+    return res.json(build);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
 exports.updateBuild = async (req, res) => {
   try {
     const saved = await savedBuildService.updateBuild(

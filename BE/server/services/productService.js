@@ -23,13 +23,30 @@ async function resolveCategoryId(value) {
   if (!value) return null;
   if (isObjectId(value)) return value;
 
-  const exact = exactI(value);
-  if (!exact) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
 
-  const bySlug = await Category.findOne({ slug: exact }).select("_id");
+  // Try exact slug match first (case-insensitive)
+  const bySlug = await Category.findOne({
+    slug: new RegExp(`^${escapeRegex(trimmed)}$`, "i"),
+  }).select("_id");
   if (bySlug) return bySlug._id;
 
-  const byName = await Category.findOne({ name: exact }).select("_id");
+  // Try slug match with slugify normalization
+  const normalizedSlug = slugify(trimmed, {
+    lower: true,
+    strict: true,
+    trim: true,
+  });
+  const byNormalizedSlug = await Category.findOne({
+    slug: normalizedSlug,
+  }).select("_id");
+  if (byNormalizedSlug) return byNormalizedSlug._id;
+
+  // Try exact name match (case-insensitive)
+  const byName = await Category.findOne({
+    name: new RegExp(`^${escapeRegex(trimmed)}$`, "i"),
+  }).select("_id");
   if (byName) return byName._id;
 
   return null;
@@ -39,13 +56,30 @@ async function resolveBrandId(value) {
   if (!value) return null;
   if (isObjectId(value)) return value;
 
-  const exact = exactI(value);
-  if (!exact) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
 
-  const bySlug = await Brand.findOne({ slug: exact }).select("_id");
+  // Try exact slug match first (case-insensitive)
+  const bySlug = await Brand.findOne({
+    slug: new RegExp(`^${escapeRegex(trimmed)}$`, "i"),
+  }).select("_id");
   if (bySlug) return bySlug._id;
 
-  const byName = await Brand.findOne({ name: exact }).select("_id");
+  // Try slug match with slugify normalization
+  const normalizedSlug = slugify(trimmed, {
+    lower: true,
+    strict: true,
+    trim: true,
+  });
+  const byNormalizedSlug = await Brand.findOne({ slug: normalizedSlug }).select(
+    "_id",
+  );
+  if (byNormalizedSlug) return byNormalizedSlug._id;
+
+  // Try exact name match (case-insensitive)
+  const byName = await Brand.findOne({
+    name: new RegExp(`^${escapeRegex(trimmed)}$`, "i"),
+  }).select("_id");
   if (byName) return byName._id;
 
   return null;
@@ -66,8 +100,8 @@ async function getProducts(query) {
 
   if (query.category) {
     const categoryId = await resolveCategoryId(query.category);
-    // Legacy data might not have Category docs/refs; don't hard-fail.
     if (categoryId) filter.category = categoryId;
+    else return [];
   }
 
   if (query.brand) {

@@ -5,11 +5,14 @@ const {
   getMyBuilds,
   createBuild,
   getBuildByIdOrShare,
+  getBuildByShareLink,
   updateBuild,
   deleteBuild,
 } = require("../controllers/savedBuildController");
 
 const { protect } = require("../middleware/authMiddleware");
+
+router.get("/shared/:shareLink", getBuildByShareLink);
 
 router.get("/me", protect, getMyBuilds);
 router.post("/", protect, createBuild);

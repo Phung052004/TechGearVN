@@ -48,16 +48,14 @@ async function replaceMyCart(userId, items) {
   );
 }
 
-async function upsertMyCartItem(userId, { product, quantity } = {}) {
+async function upsertMyCartItem(userId, { product, quantity, merge } = {}) {
   const productId = product;
   const qty = Number(quantity || 0);
+  const shouldMerge = Boolean(merge);
 
   if (!productId || qty <= 0) {
     throw createHttpError(400, "Thiếu product hoặc quantity");
   }
-
-  const built = await buildCartItem({ productId, quantity: qty });
-  if (!built) throw createHttpError(404, "Không tìm thấy sản phẩm");
 
   let cart = await Cart.findOne({ user: userId });
   if (!cart) cart = await Cart.create({ user: userId, items: [] });
@@ -65,6 +63,15 @@ async function upsertMyCartItem(userId, { product, quantity } = {}) {
   const idx = cart.items.findIndex(
     (i) => String(i.product) === String(productId),
   );
+
+  const nextQuantity =
+    idx >= 0 && shouldMerge
+      ? Number(cart.items[idx]?.quantity || 0) + qty
+      : qty;
+
+  const built = await buildCartItem({ productId, quantity: nextQuantity });
+  if (!built) throw createHttpError(404, "Không tìm thấy sản phẩm");
+
   if (idx >= 0) cart.items[idx] = built;
   else cart.items.push(built);
 

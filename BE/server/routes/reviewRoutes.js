@@ -6,12 +6,22 @@ const {
   getReviewsForProduct,
   getPendingReviews,
   moderateReview,
+  getMyReviewsForOrder,
+  updateMyReview,
+  deleteMyReview,
 } = require("../controllers/reviewController");
 
-const { protect, authorize } = require("../middleware/authMiddleware");
+const {
+  protect,
+  authorize,
+  optionalProtect,
+} = require("../middleware/authMiddleware");
 
-router.get("/product/:productIdOrSlug", getReviewsForProduct);
+router.get("/product/:productIdOrSlug", optionalProtect, getReviewsForProduct);
 router.post("/", protect, createReview);
+router.get("/my/order/:orderId", protect, getMyReviewsForOrder);
+router.put("/:id", protect, updateMyReview);
+router.delete("/:id", protect, deleteMyReview);
 
 router.get("/pending", protect, authorize("ADMIN", "STAFF"), getPendingReviews);
 router.put(

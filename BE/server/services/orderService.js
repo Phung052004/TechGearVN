@@ -208,10 +208,55 @@ async function updateOrderStatus(id, payload = {}) {
   const order = await Order.findById(id);
   if (!order) throw createHttpError(404, "Không tìm thấy đơn hàng");
 
+  const isTerminalState = ["COMPLETED", "CANCELLED"].includes(
+    order.orderStatus,
+  );
+
+  if (isTerminalState) {
+    if (orderStatus !== undefined && orderStatus !== order.orderStatus) {
+      throw createHttpError(
+        400,
+        `Đơn hàng đã ở trạng thái ${order.orderStatus}, không thể chuyển sang trạng thái khác`,
+      );
+    }
+
+    if (paymentStatus !== undefined && paymentStatus !== order.paymentStatus) {
+      throw createHttpError(
+        400,
+        `Đơn hàng đã ở trạng thái ${order.orderStatus}, không thể thay đổi trạng thái thanh toán`,
+      );
+    }
+  }
+
+  const isCompletedAndPaid =
+    order.orderStatus === "COMPLETED" && order.paymentStatus === "PAID";
+
+  if (["RETURNED", "CANCELLED"].includes(orderStatus) && isCompletedAndPaid) {
+    throw createHttpError(
+      400,
+      "Đơn hàng đã hoàn thành và thanh toán, không thể chuyển sang hoàn trả hoặc hủy",
+    );
+  }
+
+  if (
+    isCompletedAndPaid &&
+    paymentStatus !== undefined &&
+    paymentStatus !== "PAID"
+  ) {
+    throw createHttpError(
+      400,
+      "Đơn hàng đã hoàn thành và thanh toán, không thể thay đổi trạng thái thanh toán",
+    );
+  }
+
   const prevStatus = order.orderStatus;
 
   if (orderStatus !== undefined) order.orderStatus = orderStatus;
   if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
+
+  if (orderStatus === "COMPLETED") {
+    order.paymentStatus = "PAID";
+  }
 
   // Handle delivery assignment
   if (deliveryAssignee !== undefined) {
@@ -273,6 +318,13 @@ async function updateOrderStatusForUser(id, payload = {}, user) {
     const order = await Order.findById(id);
     if (!order) throw createHttpError(404, "Không tìm thấy đơn hàng");
 
+    if (["COMPLETED", "CANCELLED"].includes(order.orderStatus)) {
+      throw createHttpError(
+        400,
+        `Đơn hàng đã ở trạng thái ${order.orderStatus}, không thể cập nhật`,
+      );
+    }
+
     if (
       !order.deliveryAssignee ||
       String(order.deliveryAssignee) !== String(user._id)
@@ -281,6 +333,10 @@ async function updateOrderStatusForUser(id, payload = {}, user) {
     }
 
     if (orderStatus !== undefined) order.orderStatus = orderStatus;
+
+    if (orderStatus === "COMPLETED") {
+      order.paymentStatus = "PAID";
+    }
 
     if (orderStatus === "COMPLETED" && !order.deliveredAt) {
       order.deliveredAt = new Date();

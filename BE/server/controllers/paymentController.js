@@ -121,3 +121,51 @@ exports.payosWebhook = async (req, res) => {
     return res.status(status).json({ message: error.message });
   }
 };
+
+// Get payment history for an order
+exports.getOrderPayments = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const Payment = require("../models/Payment");
+    const Order = require("../models/Order");
+
+    // Verify user owns the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+    if (String(order.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Không có quyền truy cập" });
+    }
+
+    const payments = await Payment.find({ order: orderId }).sort({
+      createdAt: -1,
+    });
+    return res.json(payments);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+// Get payment details
+exports.getPaymentDetails = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const Payment = require("../models/Payment");
+    const Order = require("../models/Order");
+
+    const payment = await Payment.findById(paymentId).populate("order");
+    if (!payment) {
+      return res.status(404).json({ message: "Không tìm thấy payment" });
+    }
+
+    // Verify user owns the order
+    if (String(payment.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Không có quyền truy cập" });
+    }
+
+    return res.json(payment);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};

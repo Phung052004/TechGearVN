@@ -6,6 +6,13 @@ const { PayOS } = require("@payos/node");
 const Order = require("../models/Order");
 const { createHttpError } = require("../utils/httpError");
 
+let Payment = null;
+try {
+  Payment = require("../models/Payment");
+} catch {
+  Payment = null;
+}
+
 function sortObject(obj) {
   const sorted = {};
   Object.keys(obj)
@@ -63,9 +70,17 @@ function getBackendBaseUrl() {
 }
 
 function buildFrontendResultUrl({ provider, success, orderId, message } = {}) {
-  const base = String(
-    process.env.PAYMENT_RESULT_FE_URL || "http://localhost:5174/payment-result",
+  const configuredResultUrl = String(
+    process.env.PAYMENT_RESULT_FE_URL || "",
   ).trim();
+  const frontendBase = String(process.env.FRONTEND_URL || "").trim();
+
+  const base = configuredResultUrl
+    ? configuredResultUrl
+    : frontendBase
+      ? `${frontendBase.replace(/\/$/, "")}/payment-result`
+      : "http://localhost:5173/payment-result";
+
   const url = new URL(base);
   if (provider) url.searchParams.set("provider", provider);
   if (orderId) url.searchParams.set("orderId", String(orderId));
@@ -94,6 +109,46 @@ function validateOrderReadyForPayment(order) {
   }
   if (!Array.isArray(order.items) || order.items.length === 0) {
     throw createHttpError(400, "Đơn hàng không có sản phẩm");
+  }
+}
+
+async function createPaymentRecord(base = {}, extra = {}) {
+  if (!Payment) return null;
+
+  try {
+    const orderId = base?.order?._id || base?.order;
+    const userId = base?.user?._id || base?.user;
+
+    return await Payment.create({
+      order: orderId,
+      user: userId,
+      amount: Number(base?.amount || 0),
+      paymentMethod: base?.paymentMethod,
+      provider: base?.provider,
+      status: base?.status || "PENDING",
+      ...extra,
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function updatePaymentRecord(orderId, provider, patch = {}) {
+  if (!Payment) return null;
+  if (!orderId || !provider) return null;
+
+  try {
+    const payment = await Payment.findOne({ order: orderId, provider }).sort({
+      createdAt: -1,
+    });
+
+    if (!payment) return null;
+
+    Object.assign(payment, patch || {});
+    await payment.save();
+    return payment;
+  } catch {
+    return null;
   }
 }
 
@@ -263,6 +318,13 @@ async function handleVnpayReturn(query = {}) {
     order.paymentStatus = "PAID";
     if (order.orderStatus === "PENDING") order.orderStatus = "PROCESSING";
     await order.save();
+
+    // Update Payment record
+    await updatePaymentRecord(orderId, "VNPAY", {
+      status: "COMPLETED",
+      transactionId: params.vnp_TransactionNo,
+      providerResponse: params,
+    });
   }
 
   return {
@@ -300,6 +362,30 @@ async function createMomoPayment({ user, orderId } = {}) {
     returnUrl.searchParams.set("orderId", String(order._id));
     returnUrl.searchParams.set("resultCode", "0");
     returnUrl.searchParams.set("message", "Fake MoMo: thanh toán thành công");
+
+    // Create Payment record in FAKE mode
+    const payment = await createPaymentRecord(
+      {
+        order,
+        user,
+        amount: order.finalAmount,
+        paymentMethod: "MOMO",
+        provider: "MOMO",
+        status: "PENDING",
+      },
+      {
+        transactionId: "", // No real transaction ID in fake mode
+      },
+    );
+
+    // Add payment to order if not already there
+    if (payment?._id) {
+      if (!order.payments) order.payments = [];
+      if (!order.payments.includes(payment._id)) {
+        order.payments.push(payment._id);
+        await order.save();
+      }
+    }
 
     return {
       provider: "MOMO",
@@ -362,6 +448,31 @@ async function createMomoPayment({ user, orderId } = {}) {
     throw createHttpError(400, "MoMo không trả về payUrl");
   }
 
+  // Create Payment record in LIVE mode
+  const payment = await createPaymentRecord(
+    {
+      order,
+      user,
+      amount: order.finalAmount,
+      paymentMethod: "MOMO",
+      provider: "MOMO",
+      status: "PENDING",
+    },
+    {
+      transactionId: data?.requestId,
+      providerResponse: data,
+    },
+  );
+
+  // Add payment to order if not already there
+  if (payment?._id) {
+    if (!order.payments) order.payments = [];
+    if (!order.payments.includes(payment._id)) {
+      order.payments.push(payment._id);
+      await order.save();
+    }
+  }
+
   return {
     provider: "MOMO",
     orderId: order._id,
@@ -381,6 +492,13 @@ async function handleMomoReturn(query = {}) {
     order.paymentStatus = "PAID";
     if (order.orderStatus === "PENDING") order.orderStatus = "PROCESSING";
     await order.save();
+
+    // Update Payment record
+    await updatePaymentRecord(String(order._id), "MOMO", {
+      status: "COMPLETED",
+      transactionId: query.transId,
+      providerResponse: query,
+    });
   }
 
   return {
@@ -431,6 +549,32 @@ async function createPayosPayment({ user, orderId } = {}) {
   ) {
     order.payosPaymentLinkId = paymentLink.paymentLinkId;
     await order.save();
+  }
+
+  // Create Payment record
+  const payment = await createPaymentRecord(
+    {
+      order,
+      user,
+      amount: order.finalAmount,
+      paymentMethod: "PAYOS",
+      provider: "PAYOS",
+      status: "PENDING",
+    },
+    {
+      transactionCode: String(order.payosOrderCode),
+      paymentLinkId: paymentLink?.paymentLinkId,
+      providerResponse: paymentLink,
+    },
+  );
+
+  // Add payment to order if not already there
+  if (payment?._id) {
+    if (!order.payments) order.payments = [];
+    if (!order.payments.includes(payment._id)) {
+      order.payments.push(payment._id);
+      await order.save();
+    }
   }
 
   return {
@@ -503,6 +647,13 @@ async function handlePayosWebhook(payload = {}) {
       order.payosPaymentLinkId = webhookData.data.paymentLinkId;
     }
     await order.save();
+
+    // Update Payment record
+    await updatePaymentRecord(String(order._id), "PAYOS", {
+      status: "COMPLETED",
+      transactionId: webhookData?.data?.transactionId,
+      providerResponse: webhookData?.data,
+    });
   }
 
   return { ok: true };
@@ -513,6 +664,31 @@ async function mockMarkPaid({ user, orderId } = {}) {
   order.paymentStatus = "PAID";
   if (order.orderStatus === "PENDING") order.orderStatus = "PROCESSING";
   await order.save();
+
+  // Create/update Payment record for mock
+  const payment = await createPaymentRecord(
+    {
+      order,
+      user,
+      amount: order.finalAmount,
+      paymentMethod: order.paymentMethod,
+      provider: "MANUAL",
+      status: "COMPLETED",
+    },
+    {
+      transactionId: `mock-${order._id}`,
+    },
+  );
+
+  // Add payment to order if not already there
+  if (payment?._id) {
+    if (!order.payments) order.payments = [];
+    if (!order.payments.includes(payment._id)) {
+      order.payments.push(payment._id);
+      await order.save();
+    }
+  }
+
   return { message: "OK", order };
 }
 

@@ -13,6 +13,7 @@ exports.getReviewsForProduct = async (req, res) => {
   try {
     const reviews = await reviewService.getReviewsForProduct(
       req.params.productIdOrSlug,
+      req.user?._id,
     );
     return res.json(reviews);
   } catch (error) {
@@ -33,6 +34,43 @@ exports.moderateReview = async (req, res) => {
   try {
     const saved = await reviewService.moderateReview(req.params.id, req.body);
     return res.json(saved);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+exports.getMyReviewsForOrder = async (req, res) => {
+  try {
+    const reviews = await reviewService.getMyReviewsForOrder(
+      req.user._id,
+      req.params.orderId,
+    );
+    return res.json(reviews);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+exports.updateMyReview = async (req, res) => {
+  try {
+    const updated = await reviewService.updateMyReview(
+      req.user._id,
+      req.params.id,
+      req.body,
+    );
+    return res.json(updated);
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+exports.deleteMyReview = async (req, res) => {
+  try {
+    const result = await reviewService.deleteMyReview(
+      req.user._id,
+      req.params.id,
+    );
+    return res.json(result);
   } catch (error) {
     return res.status(error.statusCode || 400).json({ message: error.message });
   }
